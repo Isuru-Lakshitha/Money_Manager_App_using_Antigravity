@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { Wallet, Play, Tags } from 'lucide-react'
-import { useAppStore } from '@/store'
+import { useAppStore, DEFAULT_CATEGORIES } from '@/store'
 
 export default function MoneyFlowSankey() {
   const transactions = useAppStore(state => state.transactions)
@@ -13,7 +13,7 @@ export default function MoneyFlowSankey() {
 
   // Get Top 3 Expense Categories
   const categoryMap: Record<string, number> = {}
-  transactions.filter(t => t.type === 'expense').forEach(t => {
+  transactions.filter(t => t.type === 'expense' && t.category_id !== 'goal').forEach(t => {
     const catId = t.category_id || 'uncategorized'
     categoryMap[catId] = (categoryMap[catId] || 0) + t.amount
   })
@@ -29,10 +29,16 @@ export default function MoneyFlowSankey() {
         name = 'Goal Funding'
         icon = '🎯'
       } else {
-        const category = categories.find(c => c.id === catId)
-        if (category) {
-          name = category.name
-          icon = category.icon || '🏷️'
+        const customCat = categories.find(c => c.id === catId)
+        if (customCat) {
+          name = customCat.name
+          icon = customCat.icon || '🏷️'
+        } else {
+          const defaultCat = DEFAULT_CATEGORIES.find(c => c.id === catId)
+          if (defaultCat) {
+            name = defaultCat.name
+            icon = defaultCat.icon || '🏷️'
+          }
         }
       }
       // Colors sequence: Purple, Cyan, Orange
@@ -130,20 +136,30 @@ export default function MoneyFlowSankey() {
         </div>
 
         {/* Destination Nodes */}
-        <div className="flex flex-col space-y-8 relative z-20 justify-center h-full py-4">
+        <div className="absolute right-4 sm:right-12 inset-y-0 w-32 md:w-48 pointer-events-none">
+          {topExpenses.map((exp, i) => {
+            // Must perfectly match the SVG logic:
+            // Top 3 yDest points across exactly 400px viewBox coordinate space: 80, 200, 320.
+            // But viewBox is 500x400 stretched. Let's position relatively by percentages!
+            // 80/400 = 20%, 200/400 = 50%, 320/400 = 80%
+            const topPercent = i === 0 ? 20 : i === 1 ? 50 : 80;
 
-          {topExpenses.map(exp => (
-            <div key={exp.id} className="flex items-center space-x-4 bg-black/40 pr-4 rounded-xl backdrop-blur-sm border border-white/5 pb-1 pt-1 pl-1">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${exp.style.border} shadow-[0_0_15px_rgba(0,0,0,0.5)] bg-black/60 shrink-0 text-xl`}>
-                {exp.icon}
+            return (
+              <div
+                key={exp.id}
+                className="absolute right-0 flex items-center space-x-4 bg-black/40 pr-4 rounded-xl backdrop-blur-sm border border-white/5 pb-1 pt-1 pl-1 pointer-events-auto transform -translate-y-1/2"
+                style={{ top: `${topPercent}%` }}
+              >
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${exp.style.border} shadow-[0_0_15px_rgba(0,0,0,0.5)] bg-black/60 shrink-0 text-xl`}>
+                  {exp.icon}
+                </div>
+                <div>
+                  <h4 className="text-gray-200 font-semibold text-sm max-w-[80px] truncate" title={exp.name}>{exp.name}</h4>
+                  <p className={`text-xs font-numbers ${exp.style.text}`}>Rs. {(exp.amount / 1000).toFixed(0)}k</p>
+                </div>
               </div>
-              <div>
-                <h4 className="text-gray-200 font-semibold text-sm max-w-[80px] truncate" title={exp.name}>{exp.name}</h4>
-                <p className={`text-xs font-numbers ${exp.style.text}`}>Rs. {(exp.amount / 1000).toFixed(0)}k</p>
-              </div>
-            </div>
-          ))}
-
+            )
+          })}
         </div>
 
       </div>

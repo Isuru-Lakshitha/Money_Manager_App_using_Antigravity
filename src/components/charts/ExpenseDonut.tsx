@@ -4,7 +4,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
 
-import { useAppStore } from '@/store'
+import { useAppStore, DEFAULT_CATEGORIES } from '@/store'
 import { startOfMonth, subMonths, format } from 'date-fns'
 
 export default function ExpenseDonut() {
@@ -14,7 +14,7 @@ export default function ExpenseDonut() {
 
   // Get current month's expenses
   const currentMonthPrefix = format(new Date(), 'yyyy-MM')
-  const monthlyExpenses = transactions.filter(t => t.type === 'expense' && t.date.startsWith(currentMonthPrefix))
+  const monthlyExpenses = transactions.filter(t => t.type === 'expense' && t.category_id !== 'goal' && t.date.startsWith(currentMonthPrefix))
 
   // Aggregate by category
   const categoryMap: Record<string, number> = {}
@@ -23,8 +23,13 @@ export default function ExpenseDonut() {
     if (t.category_id === 'goal') {
       name = 'Goal Funding'
     } else if (t.category_id) {
-      const cat = categories.find(c => c.id === t.category_id)
-      if (cat) name = cat.name
+      const customCat = categories.find(c => c.id === t.category_id)
+      if (customCat) {
+        name = customCat.name
+      } else {
+        const defaultCat = DEFAULT_CATEGORIES.find(c => c.id === t.category_id)
+        if (defaultCat) name = defaultCat.name
+      }
     }
     categoryMap[name] = (categoryMap[name] || 0) + t.amount
   })

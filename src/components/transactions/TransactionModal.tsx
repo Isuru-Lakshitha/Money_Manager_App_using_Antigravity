@@ -78,6 +78,7 @@ interface TransactionModalProps {
 
 export default function TransactionModal({ isOpen, onClose, transactionToEdit }: TransactionModalProps) {
   const accounts = useAppStore(state => state.accounts)
+  const transactions = useAppStore(state => state.transactions)
   const addTransaction = useAppStore(state => state.addTransaction)
   const updateTransaction = useAppStore(state => state.updateTransaction)
   const updateAccount = useAppStore(state => state.updateAccount)
@@ -213,7 +214,7 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
               {/* Header */}
               <div className="p-6 border-b border-white/5 flex items-center justify-between relative overflow-hidden">
                 <div className={`absolute top-0 left-0 w-full h-1 ${type === 'income' ? 'bg-cyan-500 glow-cyan' :
-                    type === 'transfer' ? 'bg-blue-500 glow-blue' : 'bg-purple-500 glow-purple'
+                  type === 'transfer' ? 'bg-blue-500 glow-blue' : 'bg-purple-500 glow-purple'
                   }`} />
                 <h2 className="text-xl font-bold text-white">
                   {transactionToEdit ? 'Edit Transaction' : 'New Transaction'}
@@ -293,20 +294,18 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
                           </div>
                         </div>
 
-                        {watch('fee_amount') && Number(watch('fee_amount')) > 0 && (
-                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
-                            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">Deduct Fee From</label>
-                            <select
-                              {...register('feeAccountId')}
-                              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-300 focus:outline-none focus:border-white/30"
-                            >
-                              <option value="">Same as From Account</option>
-                              {accounts.map(acc => (
-                                <option key={acc.id} value={acc.id}>{acc.name} (Rs. {acc.balance.toLocaleString()})</option>
-                              ))}
-                            </select>
-                          </motion.div>
-                        )}
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
+                          <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">Deduct Fee From</label>
+                          <select
+                            {...register('feeAccountId')}
+                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-gray-300 focus:outline-none focus:border-white/30"
+                          >
+                            <option value="">Same as From Account</option>
+                            {accounts.map(acc => (
+                              <option key={acc.id} value={acc.id}>{acc.name} (Rs. {acc.balance.toLocaleString()})</option>
+                            ))}
+                          </select>
+                        </motion.div>
                       </motion.div>
                     )}
                   </div>
@@ -366,8 +365,8 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
                               type="button"
                               onClick={() => setValue('categoryId', cat.id, { shouldValidate: true })}
                               className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${isSelected
-                                  ? type === 'income' ? 'bg-cyan-500/10 border-cyan-500/50 glow-cyan' : 'bg-purple-500/10 border-purple-500/50 glow-purple'
-                                  : 'bg-black/20 border-white/5 hover:bg-white/5'
+                                ? type === 'income' ? 'bg-cyan-500/10 border-cyan-500/50 glow-cyan' : 'bg-purple-500/10 border-purple-500/50 glow-purple'
+                                : 'bg-black/20 border-white/5 hover:bg-white/5'
                                 }`}
                             >
                               <span className="text-2xl mb-1">{cat.icon}</span>
@@ -413,13 +412,19 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
                   <div>
                     <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">Notes</label>
                     <div className="relative">
-                      <Type className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-                      <textarea
+                      <Type className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        list="past-notes"
                         {...register('notes')}
                         placeholder="Additional details..."
-                        rows={2}
-                        className="w-full bg-black/40 border border-white/10 rounded-xl py-2.5 pl-10 pr-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-white/30 transition-all resize-none"
+                        className="w-full bg-black/40 border border-white/10 rounded-xl py-2.5 pl-10 pr-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-white/30 transition-all font-sans"
                       />
+                      <datalist id="past-notes">
+                        {Array.from(new Set(transactions.map(t => t.notes).filter(Boolean))).map((note, idx) => (
+                          <option key={`note-${idx}`} value={note as string} />
+                        ))}
+                      </datalist>
                     </div>
                   </div>
 
@@ -439,8 +444,8 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
                   type="submit"
                   form="tx-form"
                   className={`flex-1 py-3 rounded-xl font-semibold text-white transition-all shadow-lg ${type === 'income'
-                      ? 'bg-cyan-600 hover:bg-cyan-500 shadow-cyan-500/50'
-                      : type === 'transfer' ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/50' : 'bg-purple-600 hover:bg-purple-500 shadow-purple-500/50'
+                    ? 'bg-cyan-600 hover:bg-cyan-500 shadow-cyan-500/50'
+                    : type === 'transfer' ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/50' : 'bg-purple-600 hover:bg-purple-500 shadow-purple-500/50'
                     }`}
                 >
                   {transactionToEdit ? 'Save Changes' : 'Confirm'}

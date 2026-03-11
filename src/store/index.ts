@@ -11,6 +11,23 @@ export interface Category {
   icon: string | null
 }
 
+export const DEFAULT_CATEGORIES: Category[] = [
+  { id: '1', name: 'Food & Dining', type: 'expense', icon: '🍔' },
+  { id: '2', name: 'Utilities', type: 'expense', icon: '⚡' },
+  { id: '3', name: 'Transportation', type: 'expense', icon: '🚗' },
+  { id: '4', name: 'Housing / Rent', type: 'expense', icon: '🏠' },
+  { id: '5', name: 'Healthcare', type: 'expense', icon: '⚕️' },
+  { id: '6', name: 'Entertainment', type: 'expense', icon: '🎬' },
+  { id: '7', name: 'Education', type: 'expense', icon: '📚' },
+  { id: '8', name: 'Shopping', type: 'expense', icon: '🛍️' },
+  { id: '9', name: 'Salary', type: 'income', icon: '💰' },
+  { id: '10', name: 'Business', type: 'income', icon: '🏢' },
+  { id: '11', name: 'Freelance', type: 'income', icon: '💻' },
+  { id: '12', name: 'Investments', type: 'income', icon: '📈' },
+  { id: '13', name: 'Gifts', type: 'income', icon: '🎁' },
+  { id: '14', name: 'Other', type: 'income', icon: '✨' },
+]
+
 export interface Account {
   id: string
   name: string

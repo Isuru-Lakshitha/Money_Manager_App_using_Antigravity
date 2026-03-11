@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Plus, ArrowDownRight, ArrowUpRight, ArrowRightLeft, Edit2, Trash2, MoreVertical } from 'lucide-react'
 import { format } from 'date-fns'
-import { useAppStore, Transaction } from '@/store'
+import { useAppStore, Transaction, DEFAULT_CATEGORIES } from '@/store'
 
 export default function TransactionsPage() {
   const transactions = useAppStore(state => state.transactions)
@@ -12,12 +12,17 @@ export default function TransactionsPage() {
   const accounts = useAppStore(state => state.accounts)
   const deleteTransaction = useAppStore(state => state.deleteTransaction)
   const updateAccount = useAppStore(state => state.updateAccount)
-  const globalSearchTerm = useAppStore(state => state.globalSearchTerm)
-
   const setGlobalTxModalOpen = useAppStore(state => state.setGlobalTxModalOpen)
   const setGlobalTxToEdit = useAppStore(state => state.setGlobalTxToEdit)
+  const globalSearchTerm = useAppStore(state => state.globalSearchTerm)
+  const setGlobalSearchTerm = useAppStore(state => state.setGlobalSearchTerm)
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleEdit = (tx: Transaction) => {
     setGlobalTxToEdit(tx)
@@ -50,13 +55,11 @@ export default function TransactionsPage() {
 
   const getCategoryName = (id?: string | null) => {
     if (!id) return 'Uncategorized'
-    // Fallback names for hardcoded mockup categories if not found in store
-    const mockNames: Record<string, string> = {
-      '1': 'Food & Dining', '2': 'Utilities', '3': 'Transportation', '4': 'Housing',
-      '5': 'Healthcare', '6': 'Entertainment', '7': 'Education', '8': 'Shopping',
-      '9': 'Salary', '10': 'Business', '11': 'Freelance', '12': 'Investments'
-    }
-    return mockNames[id] || 'Other'
+    const customCat = categories.find(c => c.id === id)
+    if (customCat) return customCat.name
+
+    const defaultCat = DEFAULT_CATEGORIES.find(c => c.id === id)
+    return defaultCat ? defaultCat.name : 'Other'
   }
 
   const getAccountName = (id: string) => {
@@ -64,9 +67,8 @@ export default function TransactionsPage() {
     return acc ? acc.name : 'Deleted Account'
   }
 
-  const filteredTransactions = transactions.filter(tx => {
-    if (!globalSearchTerm) return true
-
+  // Filter transactions
+  const filteredTransactions = globalSearchTerm.trim() === '' ? transactions : transactions.filter(tx => {
     const term = globalSearchTerm.toLowerCase()
     const catName = getCategoryName(tx.category_id).toLowerCase()
     const accName = getAccountName(tx.account_id).toLowerCase()
@@ -81,6 +83,25 @@ export default function TransactionsPage() {
       amountStr.includes(term) ||
       tx.type.includes(term)
   })
+
+  // Calculate totals for search results
+  const searchMatchCount = filteredTransactions.length
+  const searchIncome = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0)
+  const searchExpense = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
+
+  if (!mounted) {
+    return (
+      <div className="space-y-6 max-w-5xl mx-auto pb-20">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-1">Transactions</h1>
+            <p className="text-gray-400">View and manage your entire financial history.</p>
+          </div>
+        </div>
+        <div className="glass-panel p-12 text-center text-gray-400">Loading transactions...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-20">
@@ -102,8 +123,40 @@ export default function TransactionsPage() {
         </button>
       </div>
 
+      {/* Search Summary Block */}
+      {globalSearchTerm && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-panel p-6 mb-6 border-cyan-500/30 flex flex-col md:flex-row justify-between items-center gap-4 bg-cyan-900/10"
+        >
+          <div>
+            <h3 className="text-white font-semibold flex items-center gap-2">
+              Search Results for <span className="text-cyan-400">"{globalSearchTerm}"</span>
+            </h3>
+            <p className="text-xs text-gray-400 mt-1">{searchMatchCount} {searchMatchCount === 1 ? 'transaction' : 'transactions'} found</p>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="text-right">
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider">Total Income</p>
+              <p className="text-cyan-400 font-numbers font-semibold">Rs. {searchIncome.toLocaleString()}</p>
+            </div>
+            <div className="text-right border-l border-white/10 pl-6">
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider">Total Expense</p>
+              <p className="text-purple-400 font-numbers font-semibold">Rs. {searchExpense.toLocaleString()}</p>
+            </div>
+            <button
+              onClick={() => setGlobalSearchTerm('')}
+              className="ml-4 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors"
+            >
+              Clear Search
+            </button>
+          </div>
+        </motion.div>
+      )}
+
       <div className="glass-panel overflow-hidden">
-        {transactions.length === 0 ? (
+        {filteredTransactions.length === 0 ? (
           <div className="p-12 text-center flex flex-col items-center justify-center">
             <div className="w-16 h-16 rounded-full glass bg-white/5 flex items-center justify-center mb-4">
               <ArrowRightLeft className="w-8 h-8 text-gray-400" />

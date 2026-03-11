@@ -5,7 +5,7 @@ import { PieChart, TrendingUp, TrendingDown, Activity, ArrowRightLeft } from 'lu
 import { useAppStore } from '@/store'
 
 // Components
-import CashflowChart from '@/components/charts/CashflowChart'
+import DailySpendingTracker from '@/components/charts/DailySpendingTracker'
 import ExpenseDonut from '@/components/charts/ExpenseDonut'
 import IncomeExpenseBarChart from '@/components/charts/IncomeExpenseBarChart'
 import MoneyFlowSankey from '@/components/charts/MoneyFlowSankey'
@@ -16,7 +16,7 @@ export default function AnalyticsPage() {
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0)
   const totalExpense = transactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0)
   const totalTransfers = transactions.filter(t => t.type === 'transfer').reduce((acc, curr) => acc + curr.amount, 0)
-  
+
   const savingsRate = totalIncome > 0 ? (((totalIncome - totalExpense) / totalIncome) * 100).toFixed(1) : '0.0'
 
   return (
@@ -30,7 +30,7 @@ export default function AnalyticsPage() {
 
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="glass-panel p-6 relative overflow-hidden group border-cyan-500/20"
@@ -45,7 +45,7 @@ export default function AnalyticsPage() {
           <h2 className="text-3xl font-bold text-white font-numbers tracking-tight mb-2">Rs. {(totalIncome / 1000).toFixed(1)}k</h2>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
@@ -61,7 +61,7 @@ export default function AnalyticsPage() {
           <h2 className="text-3xl font-bold text-white font-numbers tracking-tight mb-2">Rs. {(totalExpense / 1000).toFixed(1)}k</h2>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
@@ -77,7 +77,7 @@ export default function AnalyticsPage() {
           <h2 className="text-3xl font-bold text-white font-numbers tracking-tight mb-2">Rs. {(totalTransfers / 1000).toFixed(1)}k</h2>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
@@ -97,39 +97,39 @@ export default function AnalyticsPage() {
       {/* Advanced Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <motion.div
-           initial={{ opacity: 0, scale: 0.95 }}
-           animate={{ opacity: 1, scale: 1 }}
-           transition={{ delay: 0.4 }}
-           className="w-full"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.4 }}
+          className="w-full"
         >
           <MoneyFlowSankey />
         </motion.div>
 
         <motion.div
-           initial={{ opacity: 0, scale: 0.95 }}
-           animate={{ opacity: 1, scale: 1 }}
-           transition={{ delay: 0.5 }}
-           className="w-full"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.5 }}
+          className="w-full"
         >
-          <CashflowChart />
+          <DailySpendingTracker />
         </motion.div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <motion.div
-           initial={{ opacity: 0, y: 20 }}
-           animate={{ opacity: 1, y: 0 }}
-           transition={{ delay: 0.6 }}
-           className="lg:col-span-1"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="lg:col-span-1"
         >
           <ExpenseDonut />
         </motion.div>
 
         <motion.div
-           initial={{ opacity: 0, y: 20 }}
-           animate={{ opacity: 1, y: 0 }}
-           transition={{ delay: 0.7 }}
-           className="lg:col-span-2"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          className="lg:col-span-2"
         >
           <IncomeExpenseBarChart />
         </motion.div>
