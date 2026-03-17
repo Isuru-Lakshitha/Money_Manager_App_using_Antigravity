@@ -152,30 +152,34 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
       // Add transaction
       addTransaction(newTx)
 
-      // Update balances
-      const fromAcc = accounts.find(a => a.id === data.accountId)
-      if (fromAcc) {
-        if (data.type === 'expense') updateAccount(fromAcc.id, { balance: fromAcc.balance - numericAmount })
-        if (data.type === 'income') updateAccount(fromAcc.id, { balance: fromAcc.balance + numericAmount })
-        if (data.type === 'transfer') updateAccount(fromAcc.id, { balance: fromAcc.balance - numericAmount })
-      }
+      // Calculate net balance changes to prevent overriding state during multiple updates
+      const balanceChanges: Record<string, number> = {}
 
-      if (data.type === 'transfer') {
+      if (data.type === 'expense') {
+        balanceChanges[data.accountId] = (balanceChanges[data.accountId] || 0) - numericAmount
+      } else if (data.type === 'income') {
+        balanceChanges[data.accountId] = (balanceChanges[data.accountId] || 0) + numericAmount
+      } else if (data.type === 'transfer') {
+        balanceChanges[data.accountId] = (balanceChanges[data.accountId] || 0) - numericAmount
+        
         if (data.toAccountId) {
-          const toAcc = accounts.find(a => a.id === data.toAccountId)
-          if (toAcc) {
-            updateAccount(toAcc.id, { balance: toAcc.balance + numericAmount })
-          }
+          balanceChanges[data.toAccountId] = (balanceChanges[data.toAccountId] || 0) + numericAmount
         }
-
+        
         if (numericFee > 0) {
           const feeAccId = data.feeAccountId || data.accountId
-          const feeAcc = accounts.find(a => a.id === feeAccId)
-          if (feeAcc) {
-            updateAccount(feeAcc.id, { balance: feeAcc.balance - numericFee })
-          }
+          balanceChanges[feeAccId] = (balanceChanges[feeAccId] || 0) - numericFee
         }
       }
+
+      // Apply changes
+      Object.entries(balanceChanges).forEach(([accId, change]) => {
+        if (change === 0) return
+        const acc = accounts.find(a => a.id === accId)
+        if (acc) {
+          updateAccount(accId, { balance: acc.balance + change })
+        }
+      })
     }
 
     onClose()

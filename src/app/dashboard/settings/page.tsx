@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Download, Upload, AlertTriangle, FileJson, FileSpreadsheet, Trash2 } from 'lucide-react'
 import { useAppStore } from '@/store'
+import * as XLSX from 'xlsx'
 
 export default function SettingsPage() {
   const store = useAppStore()
@@ -31,24 +32,25 @@ export default function SettingsPage() {
     URL.revokeObjectURL(url)
   }
 
-  const handleExportCSV = () => {
-    // Basic CSV Export for Transactions
-    const headers = ['ID', 'Type', 'Amount', 'Fee', 'Account ID', 'To Account ID', 'Date', 'Notes']
-    const rows = store.transactions.map(t => [
-      t.id, t.type, t.amount.toString(), (t.fee_amount || 0).toString(), t.account_id, t.to_account_id || '', t.date, `"${t.notes || ''}"`
-    ])
+  const handleExportExcel = () => {
+    // Export Data to Excel
+    const data = store.transactions.map(t => ({
+      ID: t.id,
+      Type: t.type,
+      Amount: t.amount,
+      Fee: t.fee_amount || 0,
+      'Account ID': t.account_id,
+      'To Account ID': t.to_account_id || '',
+      Date: t.date,
+      Notes: t.notes || ''
+    }))
     
-    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+    const worksheet = XLSX.utils.json_to_sheet(data)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions")
     
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `moneymanager_transactions_${new Date().toISOString().split('T')[0]}.csv`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    // Generate buffer and trigger download
+    XLSX.writeFile(workbook, `moneymanager_transactions_${new Date().toISOString().split('T')[0]}.xlsx`)
   }
 
   const handleImportJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,11 +126,11 @@ export default function SettingsPage() {
               <span>Full Backup (.json)</span>
             </button>
             <button 
-              onClick={handleExportCSV}
+              onClick={handleExportExcel}
               className="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 px-4 py-3 rounded-xl transition-all font-semibold flex items-center justify-center space-x-2"
             >
               <FileSpreadsheet className="w-5 h-5 text-green-400" />
-              <span>Export Transactions to Excel (.csv)</span>
+              <span>Export Transactions to Excel (.xlsx)</span>
             </button>
           </div>
         </motion.div>

@@ -22,7 +22,7 @@ export default function IncomeExpenseBarChart() {
     })
 
     const income = weekTxs.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0)
-    const expense = weekTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
+    const expense = weekTxs.filter(t => t.type === 'expense' && t.category_id !== 'goal' && t.category_id !== 'transfer').reduce((sum, t) => sum + t.amount, 0)
 
     return {
       name: `Week ${weeksAgo === 0 ? 'Current' : weeksAgo === 1 ? 'Last' : format(start, 'dd MMM')}`,

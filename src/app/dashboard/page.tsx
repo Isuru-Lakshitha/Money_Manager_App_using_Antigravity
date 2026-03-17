@@ -30,8 +30,8 @@ export default function DashboardPage() {
   const currentMonthPrefix = format(new Date(), 'yyyy-MM')
   const monthlyTxs = transactions.filter(t => t.date.startsWith(currentMonthPrefix))
 
-  const monthlyIncome = monthlyTxs.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0)
-  const monthlyExpense = monthlyTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
+  const monthlyIncome = monthlyTxs.filter(t => t.type === 'income' && t.category_id !== 'transfer').reduce((sum, t) => sum + t.amount, 0)
+  const monthlyExpense = monthlyTxs.filter(t => t.type === 'expense' && t.category_id !== 'goal' && t.category_id !== 'transfer').reduce((sum, t) => sum + t.amount, 0)
 
   if (!mounted) return <div className="p-8 text-center text-gray-500">Loading dashboard...</div>
 

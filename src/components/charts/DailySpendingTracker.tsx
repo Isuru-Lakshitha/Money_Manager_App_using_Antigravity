@@ -19,9 +19,9 @@ export default function DailySpendingTracker() {
     const data = daysInMonth.map(day => {
         // Only calculate for days up to today
         if (isBefore(day, today) || isToday(day)) {
-            // Find expenses for this specific day (excluding goals)
+            // Find expenses for this specific day (excluding goals and transfers)
             const dayExpenses = transactions
-                .filter(t => t.type === 'expense' && t.category_id !== 'goal')
+                .filter(t => t.type === 'expense' && t.category_id !== 'goal' && t.category_id !== 'transfer')
                 .filter(t => t.date.startsWith(format(day, 'yyyy-MM-dd')))
                 .reduce((sum, t) => sum + t.amount, 0)
 
