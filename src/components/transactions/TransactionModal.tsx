@@ -141,45 +141,60 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
       notes: data.notes || null
     }
 
-    // Logic for modifying account balances
-    // Since we are mocking the backend logic via Zustand for now:
+    // Calculate net balance changes to prevent overriding state during multiple updates
+    const balanceChanges: Record<string, number> = {}
+
     if (transactionToEdit) {
-      // Revert old transaction balances first (complex in real app, simple implementation here)
-      // Ideally, a better approach is calculating net changes.
-      // For this prototype, we'll just update the transaction state.
-      updateTransaction(transactionToEdit.id, newTx)
-    } else {
-      // Add transaction
-      addTransaction(newTx)
-
-      // Calculate net balance changes to prevent overriding state during multiple updates
-      const balanceChanges: Record<string, number> = {}
-
-      if (data.type === 'expense') {
-        balanceChanges[data.accountId] = (balanceChanges[data.accountId] || 0) - numericAmount
-      } else if (data.type === 'income') {
-        balanceChanges[data.accountId] = (balanceChanges[data.accountId] || 0) + numericAmount
-      } else if (data.type === 'transfer') {
-        balanceChanges[data.accountId] = (balanceChanges[data.accountId] || 0) - numericAmount
+      // Revert old transaction balances
+      if (transactionToEdit.type === 'expense') {
+        balanceChanges[transactionToEdit.account_id] = (balanceChanges[transactionToEdit.account_id] || 0) + transactionToEdit.amount
+      } else if (transactionToEdit.type === 'income') {
+        balanceChanges[transactionToEdit.account_id] = (balanceChanges[transactionToEdit.account_id] || 0) - transactionToEdit.amount
+      } else if (transactionToEdit.type === 'transfer') {
+        balanceChanges[transactionToEdit.account_id] = (balanceChanges[transactionToEdit.account_id] || 0) + transactionToEdit.amount
         
-        if (data.toAccountId) {
-          balanceChanges[data.toAccountId] = (balanceChanges[data.toAccountId] || 0) + numericAmount
+        if (transactionToEdit.to_account_id) {
+          balanceChanges[transactionToEdit.to_account_id] = (balanceChanges[transactionToEdit.to_account_id] || 0) - transactionToEdit.amount
         }
         
-        if (numericFee > 0) {
-          const feeAccId = data.feeAccountId || data.accountId
-          balanceChanges[feeAccId] = (balanceChanges[feeAccId] || 0) - numericFee
+        if (transactionToEdit.fee_amount && transactionToEdit.fee_amount > 0) {
+          const feeAccId = transactionToEdit.fee_account_id || transactionToEdit.account_id
+          balanceChanges[feeAccId] = (balanceChanges[feeAccId] || 0) + transactionToEdit.fee_amount
         }
       }
+    }
 
-      // Apply changes
-      Object.entries(balanceChanges).forEach(([accId, change]) => {
-        if (change === 0) return
-        const acc = accounts.find(a => a.id === accId)
-        if (acc) {
-          updateAccount(accId, { balance: acc.balance + change })
-        }
-      })
+    // Apply new transaction balances
+    if (data.type === 'expense') {
+      balanceChanges[data.accountId] = (balanceChanges[data.accountId] || 0) - numericAmount
+    } else if (data.type === 'income') {
+      balanceChanges[data.accountId] = (balanceChanges[data.accountId] || 0) + numericAmount
+    } else if (data.type === 'transfer') {
+      balanceChanges[data.accountId] = (balanceChanges[data.accountId] || 0) - numericAmount
+      
+      if (data.toAccountId) {
+        balanceChanges[data.toAccountId] = (balanceChanges[data.toAccountId] || 0) + numericAmount
+      }
+      
+      if (numericFee > 0) {
+        const feeAccId = data.feeAccountId || data.accountId
+        balanceChanges[feeAccId] = (balanceChanges[feeAccId] || 0) - numericFee
+      }
+    }
+
+    // Apply changes
+    Object.entries(balanceChanges).forEach(([accId, change]) => {
+      if (change === 0) return
+      const acc = accounts.find(a => a.id === accId)
+      if (acc) {
+        updateAccount(accId, { balance: acc.balance + change })
+      }
+    })
+
+    if (transactionToEdit) {
+      updateTransaction(transactionToEdit.id, newTx)
+    } else {
+      addTransaction(newTx)
     }
 
     onClose()

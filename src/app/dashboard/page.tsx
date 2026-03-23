@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowUpRight, ArrowDownRight, Activity } from 'lucide-react'
+import Link from 'next/link'
 
 // Components
 import DailySpendingTracker from '@/components/charts/DailySpendingTracker'
@@ -68,10 +69,10 @@ export default function DashboardPage() {
               <Activity className="w-4 h-4 text-cyan-400" />
             </div>
           </div>
-          <h2 className="text-4xl font-bold text-white font-numbers tracking-tight mb-2">Rs. {totalBalance.toLocaleString()}</h2>
+          <h2 className="text-3xl lg:text-4xl font-bold text-white font-numbers tracking-tight mb-2">Rs. {totalBalance.toLocaleString()}</h2>
           <div className="flex items-center text-cyan-400 text-sm">
             <ArrowUpRight className="w-4 h-4 mr-1" />
-            <span>Updated live from accounts</span>
+            <span>Updated live</span>
           </div>
         </motion.div>
 
@@ -89,7 +90,7 @@ export default function DashboardPage() {
               <ArrowUpRight className="w-4 h-4 text-purple-400" />
             </div>
           </div>
-          <h2 className="text-3xl font-bold text-white font-numbers tracking-tight mb-2">Rs. {monthlyIncome.toLocaleString()}</h2>
+          <h2 className="text-2xl lg:text-3xl font-bold text-white font-numbers tracking-tight mb-2">Rs. {monthlyIncome.toLocaleString()}</h2>
           <div className="flex items-center text-gray-500 text-sm">
             <span>This month's earnings</span>
           </div>
@@ -109,7 +110,7 @@ export default function DashboardPage() {
               <ArrowDownRight className="w-4 h-4 text-orange-400" />
             </div>
           </div>
-          <h2 className="text-3xl font-bold text-white font-numbers tracking-tight mb-2">Rs. {monthlyExpense.toLocaleString()}</h2>
+          <h2 className="text-2xl lg:text-3xl font-bold text-white font-numbers tracking-tight mb-2">Rs. {monthlyExpense.toLocaleString()}</h2>
           <div className="flex items-center text-gray-500 text-sm">
             <span>This month's spending</span>
           </div>

@@ -48,21 +48,12 @@ export interface Transaction {
   notes: string | null
 }
 
-export interface Goal {
-  id: string
-  name: string
-  target_amount: number
-  current_amount: number
-  deadline: string
-  color: string
-  icon: string
-}
 
 interface AppState {
   transactions: Transaction[]
   categories: Category[]
   accounts: Account[]
-  goals: Goal[]
+
   isLoading: boolean
   isGlobalTxModalOpen: boolean
   globalTxToEdit: Transaction | null
@@ -71,15 +62,12 @@ interface AppState {
   setTransactions: (t: Transaction[]) => void
   setCategories: (c: Category[]) => void
   setAccounts: (a: Account[]) => void
-  setGoals: (g: Goal[]) => void
+
   setLoading: (l: boolean) => void
   setGlobalTxModalOpen: (open: boolean) => void
   setGlobalTxToEdit: (tx: Transaction | null) => void
   setGlobalSearchTerm: (term: string) => void
 
-  addGoal: (g: Goal) => void
-  updateGoal: (id: string, g: Partial<Goal>) => void
-  deleteGoal: (id: string) => void
 
   addTransaction: (t: Transaction) => void
   updateTransaction: (id: string, t: Partial<Transaction>) => void
@@ -98,7 +86,7 @@ export const useAppStore = create<AppState>()(
       transactions: [],
       categories: [],
       accounts: [],
-      goals: [],
+
       isLoading: false,
       isGlobalTxModalOpen: false,
       globalTxToEdit: null,
@@ -107,7 +95,7 @@ export const useAppStore = create<AppState>()(
       setTransactions: (transactions) => set({ transactions }),
       setCategories: (categories) => set({ categories }),
       setAccounts: (accounts) => set({ accounts }),
-      setGoals: (goals) => set({ goals }),
+
       setLoading: (isLoading) => set({ isLoading }),
       setGlobalTxModalOpen: (isGlobalTxModalOpen) => set({ isGlobalTxModalOpen }),
       setGlobalTxToEdit: (globalTxToEdit) => set({ globalTxToEdit }),
@@ -129,13 +117,6 @@ export const useAppStore = create<AppState>()(
         accounts: state.accounts.filter(a => a.id !== id)
       })),
 
-      addGoal: (goal) => set((state) => ({ goals: [...state.goals, goal] })),
-      updateGoal: (id, updated) => set((state) => ({
-        goals: state.goals.map(g => g.id === id ? { ...g, ...updated } : g)
-      })),
-      deleteGoal: (id) => set((state) => ({
-        goals: state.goals.filter(g => g.id !== id)
-      })),
 
       addCategory: (category) => set((state) => ({ categories: [...state.categories, category] }))
     }),
@@ -144,8 +125,7 @@ export const useAppStore = create<AppState>()(
       partialize: (state) => ({
         transactions: state.transactions,
         categories: state.categories,
-        accounts: state.accounts,
-        goals: state.goals
+        accounts: state.accounts
         // We do not persist isLoading or isGlobalTxModalOpen
       }),
     }

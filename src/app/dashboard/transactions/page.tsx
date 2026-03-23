@@ -32,21 +32,33 @@ export default function TransactionsPage() {
 
   const handleDelete = (tx: Transaction) => {
     if (confirm("Are you sure you want to delete this transaction? This will automatically reverse its impact on your account balances.")) {
+      const balanceChanges: Record<string, number> = {}
 
-      // Reverse balance logic
-      const fromAcc = accounts.find(a => a.id === tx.account_id)
-      if (fromAcc) {
-        if (tx.type === 'expense') updateAccount(fromAcc.id, { balance: fromAcc.balance + tx.amount })
-        if (tx.type === 'income') updateAccount(fromAcc.id, { balance: fromAcc.balance - tx.amount })
-        if (tx.type === 'transfer') updateAccount(fromAcc.id, { balance: fromAcc.balance + tx.amount + (tx.fee_amount || 0) })
-      }
-
-      if (tx.type === 'transfer' && tx.to_account_id) {
-        const toAcc = accounts.find(a => a.id === tx.to_account_id)
-        if (toAcc) {
-          updateAccount(toAcc.id, { balance: toAcc.balance - tx.amount })
+      if (tx.type === 'expense') {
+        balanceChanges[tx.account_id] = (balanceChanges[tx.account_id] || 0) + tx.amount
+      } else if (tx.type === 'income') {
+        balanceChanges[tx.account_id] = (balanceChanges[tx.account_id] || 0) - tx.amount
+      } else if (tx.type === 'transfer') {
+        balanceChanges[tx.account_id] = (balanceChanges[tx.account_id] || 0) + tx.amount
+        
+        if (tx.to_account_id) {
+          balanceChanges[tx.to_account_id] = (balanceChanges[tx.to_account_id] || 0) - tx.amount
+        }
+        
+        if (tx.fee_amount && tx.fee_amount > 0) {
+          const feeAccId = tx.fee_account_id || tx.account_id
+          balanceChanges[feeAccId] = (balanceChanges[feeAccId] || 0) + tx.fee_amount
         }
       }
+
+      // Apply changes
+      Object.entries(balanceChanges).forEach(([accId, change]) => {
+        if (change === 0) return
+        const acc = accounts.find(a => a.id === accId)
+        if (acc) {
+          updateAccount(accId, { balance: acc.balance + change })
+        }
+      })
 
       deleteTransaction(tx.id)
       setOpenMenuId(null)

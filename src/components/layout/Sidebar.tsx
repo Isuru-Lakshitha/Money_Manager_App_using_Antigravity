@@ -11,7 +11,8 @@ import {
   PieChart,
   FileText,
   Settings,
-  Wallet
+  Wallet,
+  Search
 } from 'lucide-react'
 
 const navItems = [
@@ -19,7 +20,7 @@ const navItems = [
   { name: 'Transactions', href: '/dashboard/transactions', icon: ArrowLeftRight },
   { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
   { name: 'Accounts', href: '/dashboard/accounts', icon: Wallet },
-  { name: 'Goals', href: '/dashboard/goals', icon: Target },
+  { name: 'Advanced Search', href: '/dashboard/search', icon: Search },
   { name: 'Reports', href: '/dashboard/reports', icon: FileText },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
