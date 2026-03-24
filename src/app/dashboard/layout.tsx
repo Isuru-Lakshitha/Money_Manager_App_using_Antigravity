@@ -1,6 +1,7 @@
 import Sidebar from '@/components/layout/Sidebar'
 import TopBar from '@/components/layout/TopBar'
 import GlobalModals from '@/components/layout/GlobalModals'
+import DataInitializer from '@/components/layout/DataInitializer'
 
 export default function DashboardLayout({
   children,
@@ -17,6 +18,7 @@ export default function DashboardLayout({
         </main>
       </div>
       <GlobalModals />
+      <DataInitializer />
     </div>
   )
 }
