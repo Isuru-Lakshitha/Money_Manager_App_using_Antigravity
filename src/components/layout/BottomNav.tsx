@@ -29,15 +29,15 @@ export default function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="md:hidden fixed bottom-4 left-4 right-4 z-50 bg-[#0A0A0A]/80 backdrop-blur-2xl border border-cyan-500/20 shadow-[0_8px_32px_rgba(6,182,212,0.2)] rounded-3xl overflow-hidden pb-safe">
-      <div className="flex overflow-x-auto hide-scrollbar px-3 py-2 items-center justify-start gap-2">
+    <nav className="fixed bottom-4 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 z-50 bg-[#0A0A0A]/80 backdrop-blur-2xl border border-cyan-500/20 shadow-[0_8px_32px_rgba(6,182,212,0.2)] rounded-3xl overflow-hidden pb-safe md:pb-0 transition-all duration-500">
+      <div className="flex overflow-x-auto hide-scrollbar px-2 md:px-6 py-2 md:py-3 items-center justify-start gap-1 md:gap-4">
         {navItems.map((item) => {
           const isActive = pathname === item.href
           
           return (
-            <Link key={item.name} href={item.href} className="flex-shrink-0">
+            <Link key={item.name} href={item.href} className="flex-shrink-0 group">
               <div
-                className={`flex flex-col items-center justify-center w-16 h-14 rounded-2xl relative transition-all ${
+                className={`flex flex-col items-center justify-center w-[60px] h-14 md:w-[72px] md:h-[68px] rounded-2xl relative transition-all duration-300 ${
                   isActive ? 'text-cyan-400 font-bold' : 'text-gray-500 hover:text-cyan-200'
                 }`}
               >
@@ -49,8 +49,8 @@ export default function BottomNav() {
                   />
                 )}
                 
-                <item.icon className={`w-5 h-5 mb-1 relative z-10 transition-transform ${isActive ? 'scale-110 drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]' : ''}`} />
-                <span className="text-[10px] relative z-10">{item.name}</span>
+                <item.icon className={`w-5 h-5 md:w-6 md:h-6 mb-1 relative z-10 transition-transform duration-300 ${isActive ? 'scale-110 drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]' : 'group-hover:-translate-y-1 group-hover:drop-shadow-[0_0_8px_rgba(6,182,212,0.3)]'}`} />
+                <span className="text-[10px] md:text-xs relative z-10">{item.name}</span>
               </div>
             </Link>
           )
