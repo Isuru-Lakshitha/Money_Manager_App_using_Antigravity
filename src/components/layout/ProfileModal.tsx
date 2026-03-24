@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, User, Lock, Save, Camera, Mail } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
@@ -22,6 +22,8 @@ export default function ProfileModal({ isOpen, onClose, onAvatarUpdated }: Profi
   // Security State
   const [newPassword, setNewPassword] = useState('')
   
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  
   const supabase = createClient()
 
   useEffect(() => {
@@ -36,6 +38,34 @@ export default function ProfileModal({ isOpen, onClose, onAvatarUpdated }: Profi
       setEmail(user.email || '')
       setFullName(user.user_metadata?.full_name || '')
       setAvatarUrl(user.user_metadata?.avatar_url || '')
+    }
+  }
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setLoading(true)
+      setMessage(null)
+      const file = e.target.files?.[0]
+      if (!file) return
+      
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("No user detected.")
+      
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${user.id}-${Math.random()}.${fileExt}`
+      
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file)
+      if (uploadError) throw new Error("Ensure you've created the 'avatars' storage bucket in Supabase! " + uploadError.message)
+      
+      const { data } = supabase.storage.from('avatars').getPublicUrl(fileName)
+      
+      setAvatarUrl(data.publicUrl)
+      setMessage({ type: 'success', text: "Successfully uploaded to Cloud Storage! Click 'Save Profile' to finalize."})
+    } catch(err: any) {
+      setMessage({ type: 'error', text: err.message })
+    } finally {
+      setLoading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
@@ -141,17 +171,22 @@ export default function ProfileModal({ isOpen, onClose, onAvatarUpdated }: Profi
             {activeTab === 'profile' && (
               <form onSubmit={handleUpdateProfile} className="space-y-6">
                 <div className="flex justify-center mb-8">
-                  <div className="relative group">
+                  <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                     <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-cyan-500 to-purple-500 p-0.5 shadow-[0_0_20px_rgba(6,182,212,0.2)]">
-                      <div className="w-full h-full bg-black rounded-full overflow-hidden flex items-center justify-center">
+                      <div className="w-full h-full bg-black rounded-full overflow-hidden flex items-center justify-center relative">
                         {avatarUrl ? (
                           <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                         ) : (
                           <User className="w-10 h-10 text-gray-400" />
                         )}
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center">
+                           <Camera className="w-6 h-6 text-white mb-1" />
+                           <span className="text-[10px] font-bold text-white">UPLOAD</span>
+                        </div>
                       </div>
                     </div>
                   </div>
+                  <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleAvatarUpload} />
                 </div>
 
                 <div className="space-y-4">
