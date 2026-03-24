@@ -31,12 +31,12 @@ export default function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="w-64 glass-panel border-l-0 border-y-0 border-r border-white/5 hidden md:flex flex-col h-screen sticky top-0">
-      <div className="p-6 flex items-center space-x-3 mb-6">
-        <div className="w-10 h-10 rounded-xl glass flex items-center justify-center glow-cyan">
-          <span className="text-cyan-400 font-bold text-xl">M</span>
+    <aside className="w-72 bg-[#050505]/95 backdrop-blur-xl border-r border-cyan-900/30 hidden md:flex flex-col h-screen sticky top-0 shadow-[4px_0_24px_rgba(6,182,212,0.05)]">
+      <div className="p-8 flex items-center space-x-4 mb-2">
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 border border-cyan-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.3)]">
+          <span className="text-cyan-400 font-black text-2xl tracking-tighter">M</span>
         </div>
-        <span className="text-white font-bold text-lg tracking-wide select-none">MoneyManager</span>
+        <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 font-black text-xl tracking-widest uppercase select-none">VoidLedger</span>
       </div>
 
       <div className="flex-1 px-4 space-y-2">
@@ -46,21 +46,27 @@ export default function Sidebar() {
           return (
             <Link key={item.name} href={item.href}>
               <div
-                className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all relative group overflow-hidden ${isActive
-                    ? 'text-cyan-400 font-semibold'
-                    : 'text-gray-400 hover:text-white'
+                className={`flex items-center space-x-4 px-6 py-4 transition-all relative group overflow-hidden ${isActive
+                    ? 'text-cyan-300 font-bold'
+                    : 'text-gray-500 hover:text-gray-200'
                   }`}
               >
                 {isActive && (
-                  <motion.div
-                    layoutId="active-nav"
-                    className="absolute inset-0 bg-cyan-500/10 border border-cyan-500/20 rounded-xl glow-blue"
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  />
+                  <>
+                    <motion.div
+                      layoutId="active-nav-bg"
+                      className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-transparent"
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    />
+                    <motion.div 
+                      layoutId="active-nav-border"
+                      className="absolute left-0 top-0 bottom-0 w-1 bg-cyan-400 shadow-[0_0_10px_rgba(6,182,212,1)]"
+                    />
+                  </>
                 )}
 
-                <item.icon className={`w-5 h-5 relative z-10 ${isActive ? 'text-cyan-400' : 'group-hover:text-cyan-400 transition-colors'}`} />
-                <span className="relative z-10">{item.name}</span>
+                <item.icon className={`w-5 h-5 relative z-10 transition-transform duration-300 ${isActive ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.8)] scale-110' : 'group-hover:text-cyan-500 group-hover:scale-110'}`} />
+                <span className="relative z-10 tracking-wide text-sm">{item.name}</span>
               </div>
             </Link>
           )
