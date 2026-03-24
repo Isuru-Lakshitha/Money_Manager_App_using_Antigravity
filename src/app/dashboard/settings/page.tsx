@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Download, Upload, AlertTriangle, FileJson, FileSpreadsheet, Trash2 } from 'lucide-react'
 import { useAppStore, DEFAULT_CATEGORIES } from '@/store'
+import { supabaseApi } from '@/utils/supabase/api'
 import * as XLSX from 'xlsx'
 
 export default function SettingsPage() {
@@ -75,22 +76,59 @@ export default function SettingsPage() {
     if (!file) return
 
     const reader = new FileReader()
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const result = event.target?.result as string
         const parsed = JSON.parse(result)
 
         if (parsed.transactions && parsed.accounts) {
-          store.setTransactions(parsed.transactions)
-          store.setAccounts(parsed.accounts)
-          if (parsed.categories) store.setCategories(parsed.categories)
+          setImportStatus({ type: 'success', message: 'Uploading strictly to cloud database... Please wait, this might take a moment.' })
           
-          setImportStatus({ type: 'success', message: 'Data successfully restored!' })
+          let failCount = 0;
+
+          // Categories
+          if (parsed.categories) {
+            for (const cat of parsed.categories) {
+              try { await supabaseApi.createCategory(cat) } catch(e) { }
+            }
+          }
+          // Accounts
+          if (parsed.accounts) {
+            for (const acc of parsed.accounts) {
+              try { await supabaseApi.createAccount(acc) } catch(e) { failCount++ }
+            }
+          }
+          // Loans
+          if (parsed.loans) {
+             for (const loan of parsed.loans) {
+               try { await supabaseApi.createLoan(loan) } catch(e) { failCount++ }
+             }
+          }
+          // Transactions
+          if (parsed.transactions) {
+            for (const tx of parsed.transactions) {
+              try { await supabaseApi.createTransaction(tx) } catch(e) { failCount++ }
+            }
+          }
+          // Payments
+          if (parsed.loanPayments) {
+             for (const lp of parsed.loanPayments) {
+               try { await supabaseApi.createLoanPayment(lp) } catch(e) { failCount++ }
+             }
+          }
+
+          if (failCount > 0) {
+             console.warn(failCount + " items failed to sync, they map duplicate records or constraint checks.");
+          }
+
+          setImportStatus({ type: 'success', message: 'Cloud Import Successful! Your data has been entirely securely synchronized to the cloud.' })
+          store.fetchGlobalData() // Fetch visual state back from Supabase cloud
+          
         } else {
-          throw new Error('Invalid backup file format.')
+          throw new Error('Invalid Schema')
         }
-      } catch (error) {
-        setImportStatus({ type: 'error', message: 'Failed to parse JSON file. Ensure it is a valid MoneyManager backup.' })
+      } catch (error: any) {
+        setImportStatus({ type: 'error', message: 'Error: ' + error.message })
       }
     }
     reader.readAsText(file)

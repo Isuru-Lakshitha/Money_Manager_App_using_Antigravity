@@ -37,7 +37,7 @@ export default function MigrationPage() {
        if (state.categories && state.categories.length > 0) {
          addLog(`Processing ${state.categories.length} custom categories...`)
          for (const cat of state.categories) {
-            try { await supabaseApi.createCategory(cat) } catch(e) { }
+            try { await supabaseApi.createCategory(cat) } catch(e: any) { addLog("Category Error: " + e.message) }
          }
        }
        
@@ -45,7 +45,7 @@ export default function MigrationPage() {
        if (state.accounts && state.accounts.length > 0) {
          addLog(`Migrating ${state.accounts.length} accounts...`)
          for (const a of state.accounts) {
-            try { await supabaseApi.createAccount(a) } catch(e) { }
+            try { await supabaseApi.createAccount(a) } catch(e: any) { addLog("Account Error: " + e.message) }
          }
        }
        
@@ -53,7 +53,7 @@ export default function MigrationPage() {
        if (state.loans && state.loans.length > 0) {
          addLog(`Migrating ${state.loans.length} loans...`)
          for (const l of state.loans) {
-            try { await supabaseApi.createLoan(l) } catch(e) { }
+            try { await supabaseApi.createLoan(l) } catch(e: any) { addLog("Loan Error: " + e.message) }
          }
        }
        
@@ -61,7 +61,7 @@ export default function MigrationPage() {
        if (state.transactions && state.transactions.length > 0) {
          addLog(`Migrating ${state.transactions.length} transactions to cloud ledger...`)
          for (const t of state.transactions) {
-            try { await supabaseApi.createTransaction(t) } catch(e) { }
+            try { await supabaseApi.createTransaction(t) } catch(e: any) { addLog(`Tx Error (${t.amount}): ` + e.message) }
          }
        }
        
@@ -69,7 +69,7 @@ export default function MigrationPage() {
        if (state.loanPayments && state.loanPayments.length > 0) {
          addLog(`Migrating ${state.loanPayments.length} loan payment validations...`)
          for (const p of state.loanPayments) {
-            try { await supabaseApi.createLoanPayment(p) } catch(e) { }
+            try { await supabaseApi.createLoanPayment(p) } catch(e: any) { addLog("Payment Error: " + e.message) }
          }
        }
        

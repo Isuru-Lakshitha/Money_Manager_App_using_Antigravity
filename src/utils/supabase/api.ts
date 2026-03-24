@@ -36,7 +36,10 @@ export const supabaseApi = {
     const supabase = createClient()
     const { data, error } = await supabase.from('accounts').select('*').order('created_at', { ascending: true })
     if (error) throw error
-    return data as Account[]
+    return (data || []).map(row => ({
+      ...row,
+      balance: Number(row.balance)
+    })) as Account[]
   },
   async createAccount(acc: Account) {
     const supabase = createClient()
@@ -66,7 +69,11 @@ export const supabaseApi = {
     const supabase = createClient()
     const { data, error } = await supabase.from('transactions').select('*').order('date', { ascending: false }).order('created_at', { ascending: false })
     if (error) throw error
-    return data as Transaction[]
+    return (data || []).map(row => ({
+      ...row,
+      amount: Number(row.amount),
+      fee_amount: Number(row.fee_amount || 0)
+    })) as Transaction[]
   },
   async createTransaction(tx: Transaction) {
     const supabase = createClient()
@@ -92,7 +99,10 @@ export const supabaseApi = {
   },
   async deleteTransaction(id: string) {
     const supabase = createClient()
-    // Cascades will handle transaction_tags if any
+    // Manual cascade to matching loan_payment ID to prevent calculation orphans
+    await supabase.from('loan_payments').delete().eq('id', id)
+    
+    // Cascades will handle transaction_tags if any natively
     const { error } = await supabase.from('transactions').delete().eq('id', id)
     if (error) throw error
   },
@@ -126,6 +136,19 @@ export const supabaseApi = {
       status: loan.status,
       notes: loan.notes
     })
+    if (error) throw error
+  },
+  async updateLoan(id: string, updates: Partial<Loan>) {
+    const supabase = createClient()
+    const dbUpdates: any = {}
+    if (updates.name !== undefined) dbUpdates.name = updates.name
+    if (updates.principalAmount !== undefined) dbUpdates.principal_amount = updates.principalAmount
+    if (updates.annualInterestRate !== undefined) dbUpdates.annual_interest_rate = updates.annualInterestRate
+    if (updates.startDate !== undefined) dbUpdates.start_date = updates.startDate
+    if (updates.status !== undefined) dbUpdates.status = updates.status
+    if (updates.notes !== undefined) dbUpdates.notes = updates.notes
+
+    const { error } = await supabase.from('loans').update(dbUpdates).eq('id', id)
     if (error) throw error
   },
   async deleteLoan(id: string) {

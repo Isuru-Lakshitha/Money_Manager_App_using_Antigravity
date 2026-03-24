@@ -208,7 +208,7 @@ export default function AdvancedSearchPage() {
                   className="w-full bg-black/40 border border-white/10 rounded-xl py-2 px-3 text-sm text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
                 >
                   <option value="all">All Categories</option>
-                  {[...DEFAULT_CATEGORIES, ...categories].map(c => (
+                  {categories.map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>

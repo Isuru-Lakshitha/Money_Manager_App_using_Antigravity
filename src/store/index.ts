@@ -134,11 +134,11 @@ export const useAppStore = create<AppState>()((set, get) => ({
     set({ isLoading: true })
     try {
       const [accounts, categories, transactions, loans, loanPayments] = await Promise.all([
-        supabaseApi.getAccounts(),
-        supabaseApi.getCategories(),
-        supabaseApi.getTransactions(),
-        supabaseApi.getLoans(),
-        supabaseApi.getLoanPayments()
+        supabaseApi.getAccounts().catch(e => { throw new Error("Accounts table: " + e.message) }),
+        supabaseApi.getCategories().catch(e => { throw new Error("Categories table: " + e.message) }),
+        supabaseApi.getTransactions().catch(e => { throw new Error("Transactions table: " + e.message) }),
+        supabaseApi.getLoans().catch(e => { throw new Error("Loans table: " + e.message) }),
+        supabaseApi.getLoanPayments().catch(e => { throw new Error("LoanPayments table: " + e.message) })
       ])
       
       set({
@@ -149,8 +149,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
         loanPayments,
         isLoading: false
       })
-    } catch (error) {
-      console.error("Cloud Sync Failed", error)
+    } catch (error: any) {
+      console.error("Cloud Sync Failed! Error details: ", error.message || error)
       set({ isLoading: false })
     }
   },
@@ -267,19 +267,32 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
   
   updateLoan: async (id, updated) => {
+    const previous = get().loans.find(l => l.id === id)
     set((state) => ({
       loans: state.loans.map(l => l.id === id ? { ...l, ...updated } : l)
     }))
+    try {
+      await supabaseApi.updateLoan(id, updated)
+    } catch(e) {
+      console.error(e)
+      if (previous) set((state) => ({ loans: state.loans.map(l => l.id === id ? previous : l) }))
+    }
   },
 
   deleteLoan: async (id) => {
+    const previous = get().loans.find(l => l.id === id)
     set((state) => ({
-      loans: state.loans.filter(l => l.id !== id)
+      loans: state.loans.filter(l => l.id !== id),
+      loanPayments: state.loanPayments.filter(p => p.loanId !== id) // Optimistic cascade wipe
     }))
     try {
       await supabaseApi.deleteLoan(id)
     } catch (error) {
       console.error(error)
+      if (previous) {
+         set((state) => ({ loans: [...state.loans, previous] }))
+         // We do not revert loan payments cascade, keep simple optimist UI.
+      }
     }
   },
 
