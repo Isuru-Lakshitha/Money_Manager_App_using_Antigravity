@@ -23,15 +23,43 @@ export default function DataInitializer() {
          return
       }
       
+      // Auto-logout inactivity logic
+      let timeoutId: NodeJS.Timeout | undefined
+      const resetTimer = () => {
+        if (timeoutId) clearTimeout(timeoutId)
+        timeoutId = setTimeout(async () => {
+          if (!isMockProject) {
+             await supabase.auth.signOut()
+             router.push('/login')
+          }
+        }, 15 * 60 * 1000) // 15 minutes of absolute inactivity
+      }
+      
+      window.addEventListener('mousemove', resetTimer)
+      window.addEventListener('keydown', resetTimer)
+      window.addEventListener('touchstart', resetTimer)
+      resetTimer()
+
       // If the user navigates to the Migration Page directly, don't overwrite the initial state
       if (!pathname.includes('migrate') && mounted) {
         fetchGlobalData()
       }
+
+      return { timeoutId, resetTimer }
     }
     
-    init()
+    let cleanupFuncs: { timeoutId?: NodeJS.Timeout, resetTimer: () => void } | undefined;
+    init().then(res => { cleanupFuncs = res })
     
-    return () => { mounted = false }
+    return () => { 
+      mounted = false 
+      if (cleanupFuncs) {
+        if (cleanupFuncs.timeoutId) clearTimeout(cleanupFuncs.timeoutId)
+        window.removeEventListener('mousemove', cleanupFuncs.resetTimer)
+        window.removeEventListener('keydown', cleanupFuncs.resetTimer)
+        window.removeEventListener('touchstart', cleanupFuncs.resetTimer)
+      }
+    }
   }, [fetchGlobalData, pathname, router])
 
   return null

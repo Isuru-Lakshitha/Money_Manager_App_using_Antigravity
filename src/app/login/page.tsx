@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -9,17 +9,29 @@ import { Wallet, Mail, Lock } from 'lucide-react'
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [isLogin, setIsLogin] = useState(true)
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot' | 'reset'>('login')
   const [error, setError] = useState<string | null>(null)
+  const [msg, setMsg] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   
   const router = useRouter()
   const supabase = createClient()
+  
+  // Listen for Password Recovery events (User clicks link in email)
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setMode('reset')
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [supabase.auth])
 
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError(null)
+    setMsg(null)
     
     try {
       // Mock bypass for local testing without a real Supabase backend
@@ -31,7 +43,18 @@ export default function LoginPage() {
         return;
       }
 
-      if (isLogin) {
+      if (mode === 'reset') {
+        const { error } = await supabase.auth.updateUser({ password })
+        if (error) throw error
+        setMsg("Password successfully updated. Going to Dashboard...")
+        setTimeout(() => router.push('/dashboard'), 1500)
+      } else if (mode === 'forgot') {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin + '/login',
+        })
+        if (error) throw error
+        setMsg("Password reset link sent to your email! Check your inbox.")
+      } else if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -44,7 +67,6 @@ export default function LoginPage() {
           password,
         })
         if (error) throw error
-        // Optionally show "check email" message or auto-login
         router.push('/dashboard')
       }
     } catch (err: any) {
@@ -76,35 +98,45 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleAuth} className="space-y-4">
-          <div>
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-              <input
-                type="email"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all"
-                required
-              />
+          {mode !== 'reset' && (
+            <div>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                <input
+                  type="email"
+                  placeholder="Email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all"
+                  required
+                />
+              </div>
             </div>
-          </div>
-          <div>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-              <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all flex-1"
-                required
-              />
+          )}
+          {mode !== 'forgot' && (
+            <div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                <input
+                  type="password"
+                  placeholder={mode === 'reset' ? "New Password" : "Password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all flex-1"
+                  required={mode !== 'forgot'}
+                />
+              </div>
             </div>
-          </div>
+          )}
+
+          {msg && (
+            <div className="text-green-400 text-sm bg-green-400/10 p-3 rounded-lg border border-green-400/20 text-center">
+              {msg}
+            </div>
+          )}
 
           {error && (
-            <div className="text-red-400 text-sm bg-red-400/10 p-3 rounded-lg border border-red-400/20">
+            <div className="text-red-400 text-sm bg-red-400/10 p-3 rounded-lg border border-red-400/20 text-center">
               {error}
             </div>
           )}
@@ -114,18 +146,26 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-semibold py-3 rounded-xl transition-all glow-cyan disabled:opacity-50"
           >
-            {loading ? 'Processing...' : isLogin ? 'Sign In' : 'Sign Up'}
+            {loading ? 'Processing...' : (mode === 'reset' ? 'Update Password' : (mode as string) === 'forgot' ? 'Send Reset Link' : mode === 'login' ? 'Sign In' : 'Sign Up')}
           </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-gray-400 hover:text-cyan-400 text-sm transition-colors"
-          >
-            {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-          </button>
-        </div>
+        {mode !== 'reset' && (
+          <div className="mt-6 flex flex-col items-center space-y-3">
+            <button
+              onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+              className="text-gray-400 hover:text-cyan-400 text-sm transition-colors"
+            >
+              {mode === 'login' ? "Don't have an account? Sign up" : mode === 'signup' ? "Already have an account? Sign in" : "Back to Sign In"}
+            </button>
+            <button
+              onClick={() => setMode('forgot')}
+              className={`text-gray-500 hover:text-cyan-400 text-xs transition-colors ${(mode as string) === 'forgot' ? 'hidden' : 'block'}`}
+            >
+              Forgot your password?
+            </button>
+          </div>
+        )}
       </motion.div>
     </div>
   )
