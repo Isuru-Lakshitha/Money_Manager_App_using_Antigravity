@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAppStore } from '@/store'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import ProfileModal from './ProfileModal'
 
 export default function TopBar() {
   const router = useRouter()
@@ -19,13 +20,38 @@ export default function TopBar() {
   const accounts = useAppStore(state => state.accounts)
 
   const [isFocused, setIsFocused] = useState(false)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const [userMeta, setUserMeta] = useState<{ full_name?: string, avatar_url?: string } | null>(null)
+  
   const searchRef = useRef<HTMLDivElement>(null)
+  const profileRef = useRef<HTMLDivElement>(null)
+  const notificationsRef = useRef<HTMLDivElement>(null)
 
   // Handle clicking outside to close suggestions
   useEffect(() => {
+    async function loadUser() {
+      try {
+        const { createClient } = await import('@/utils/supabase/client')
+        const supabase = createClient()
+        const { data } = await supabase.auth.getUser()
+        if (data.user) {
+          setUserMeta(data.user.user_metadata as any)
+        }
+      } catch (e) {}
+    }
+    loadUser()
+
     function handleClickOutside(event: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setIsFocused(false)
+      }
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false)
+      }
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
+        setIsNotificationsOpen(false)
       }
     }
     document.addEventListener("mousedown", handleClickOutside)
@@ -213,18 +239,119 @@ export default function TopBar() {
         </motion.button>
 
         <div className="flex items-center space-x-4 border-l border-white/10 pl-6">
-          <button className="relative text-gray-400 hover:text-white transition-colors">
-            <Bell className="w-5 h-5" />
-          </button>
+          
+          {/* Notifications Dropdown */}
+          <div ref={notificationsRef} className="relative">
+            <button 
+              onClick={() => setIsNotificationsOpen(!isNotificationsOpen)} 
+              className="relative text-gray-400 hover:text-white transition-colors"
+            >
+              <Bell className="w-5 h-5" />
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-cyan-500 rounded-full border border-[#0B0F19] shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
+            </button>
+            <AnimatePresence>
+              {isNotificationsOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 mt-4 w-80 bg-[#0A0A0A]/95 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] z-50 overflow-hidden"
+                >
+                  <div className="p-4 border-b border-white/5 bg-white/5">
+                    <h3 className="text-white font-semibold">Notifications</h3>
+                  </div>
+                  <div className="p-2 max-h-[300px] overflow-y-auto hide-scrollbar">
+                     <div className="p-3 bg-cyan-500/10 rounded-xl border border-cyan-500/20 mb-2">
+                        <p className="text-sm text-white font-medium">Welcome to VoidLedger!</p>
+                        <p className="text-xs text-gray-400 mt-1">Your futuristic financial hub is completely synced and secure in the cloud.</p>
+                     </div>
+                     <div className="p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer">
+                        <p className="text-sm text-gray-300 font-medium">Cloud Defense Active</p>
+                        <p className="text-xs text-gray-500 mt-1">Multi-tenant Row Level Security is actively protecting your telemetry.</p>
+                     </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
-          <button className="w-9 h-9 rounded-full bg-gradient-to-tr from-cyan-500 to-purple-500 p-0.5 glow-blue overflow-hidden cursor-pointer">
-            <div className="w-full h-full bg-black rounded-full flex items-center justify-center">
-              <User className="w-5 h-5 text-gray-300" />
-            </div>
-          </button>
+          {/* Profile Dropdown */}
+          <div ref={profileRef} className="relative">
+            <button 
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+              className="w-9 h-9 rounded-full bg-gradient-to-tr from-cyan-500 to-purple-500 p-0.5 glow-blue overflow-hidden cursor-pointer shadow-[0_0_15px_rgba(6,182,212,0.3)]"
+            >
+              <div className="w-full h-full bg-black rounded-full flex items-center justify-center transition-colors hover:bg-black/50 overflow-hidden">
+                {userMeta?.avatar_url ? (
+                  <img src={userMeta.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-5 h-5 text-gray-300" />
+                )}
+              </div>
+            </button>
+            <AnimatePresence>
+              {isProfileOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 mt-4 w-56 bg-[#0A0A0A]/95 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] z-50 overflow-hidden"
+                >
+                  <div className="p-4 border-b border-white/5 flex items-center gap-3 bg-white/5">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-purple-500 p-0.5 shadow-[0_0_10px_rgba(6,182,212,0.3)] overflow-hidden shrink-0">
+                      <div className="w-full h-full bg-black rounded-full flex items-center justify-center overflow-hidden">
+                        {userMeta?.avatar_url ? (
+                          <img src={userMeta.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="w-5 h-5 text-gray-300" />
+                        )}
+                      </div>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm text-white font-semibold tracking-wide truncate">{userMeta?.full_name || 'Commander'}</p>
+                      <p className="text-[10px] text-cyan-400 uppercase tracking-widest font-bold">Pro Level</p>
+                    </div>
+                  </div>
+                  <div className="p-2 space-y-1">
+                    <button onClick={() => { setIsProfileModalOpen(true); setIsProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5 hover:text-white rounded-xl transition-colors font-medium">
+                      Edit Profile
+                    </button>
+                    <button onClick={() => { setIsProfileModalOpen(true); setIsProfileOpen(false); }} className="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5 hover:text-white rounded-xl transition-colors font-medium">
+                      Security & Password
+                    </button>
+                    <div className="h-px bg-white/5 my-1" />
+                    <button onClick={async () => {
+                       const { createClient } = await import('@/utils/supabase/client')
+                       const supabase = createClient()
+                       await supabase.auth.signOut()
+                       router.push('/login')
+                    }} className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 rounded-xl transition-colors font-medium">
+                      Disconnect Session
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
         </div>
 
       </div>
+
+      <ProfileModal 
+        isOpen={isProfileModalOpen} 
+        onClose={() => setIsProfileModalOpen(false)} 
+        onAvatarUpdated={async () => {
+          const { createClient } = await import('@/utils/supabase/client')
+          const supabase = createClient()
+          const { data } = await supabase.auth.getUser()
+          if (data.user) {
+            setUserMeta(data.user.user_metadata as any)
+          }
+        }} 
+      />
     </header>
   )
 }
