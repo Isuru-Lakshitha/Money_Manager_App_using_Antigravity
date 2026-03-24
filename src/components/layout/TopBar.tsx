@@ -18,6 +18,8 @@ export default function TopBar() {
   const transactions = useAppStore(state => state.transactions)
   const categories = useAppStore(state => state.categories)
   const accounts = useAppStore(state => state.accounts)
+  const loans = useAppStore(state => state.loans)
+  const loanPayments = useAppStore(state => state.loanPayments)
 
   const [isFocused, setIsFocused] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
@@ -102,6 +104,23 @@ export default function TopBar() {
   const totalMatches = allMatches.length
   const totalIncome = allMatches.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0)
   const totalExpense = allMatches.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
+
+  // Calculate dynamic notifications for upcoming bills (Loans)
+  const upcomingLoans = loans.filter(l => {
+    if (l.status === 'paid_off') return false
+    
+    // Deriving exact Next Payment Date by traversing payments
+    const payments = loanPayments.filter(p => p.loanId === l.id).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    const anchorDate = payments.length > 0 ? new Date(payments[0].date) : new Date(l.startDate)
+    
+    const nextDate = new Date(anchorDate)
+    nextDate.setMonth(nextDate.getMonth() + 1)
+    
+    const diff = nextDate.getTime() - Date.now()
+    const days = diff / (1000 * 3600 * 24)
+    
+    return days >= 0 && days <= 7
+  })
 
   return (
     <header className="h-20 border-b border-white/5 glass-panel rounded-none flex items-center justify-between px-8 sticky top-0 z-40">
@@ -261,14 +280,22 @@ export default function TopBar() {
                   <div className="p-4 border-b border-white/5 bg-white/5">
                     <h3 className="text-white font-semibold">Notifications</h3>
                   </div>
-                  <div className="p-2 max-h-[300px] overflow-y-auto hide-scrollbar">
+                  <div className="p-2 max-h-[300px] overflow-y-auto python-scrollbar">
+                     
+                     {upcomingLoans.map(loan => (
+                        <div key={loan.id} onClick={() => { setIsNotificationsOpen(false); router.push('/dashboard/loans') }} className="p-3 bg-yellow-500/10 rounded-xl border border-yellow-500/20 mb-2 hover:bg-yellow-500/20 transition-colors cursor-pointer">
+                           <p className="text-sm text-yellow-500 font-medium">Payment Approaching</p>
+                           <p className="text-xs text-yellow-500/70 mt-1">Your payment for <strong>{loan.name}</strong> is due within the next 7 days.</p>
+                        </div>
+                     ))}
+
                      <div className="p-3 bg-cyan-500/10 rounded-xl border border-cyan-500/20 mb-2">
                         <p className="text-sm text-white font-medium">Welcome to VoidLedger!</p>
                         <p className="text-xs text-gray-400 mt-1">Your futuristic financial hub is completely synced and secure in the cloud.</p>
                      </div>
-                     <div className="p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer">
+                     <div onClick={() => { setIsNotificationsOpen(false); router.push('/dashboard/settings') }} className="p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer">
                         <p className="text-sm text-gray-300 font-medium">Cloud Defense Active</p>
-                        <p className="text-xs text-gray-500 mt-1">Multi-tenant Row Level Security is actively protecting your telemetry.</p>
+                        <p className="text-xs text-gray-500 mt-1">Multi-tenant Row Level Security is actively protecting your telemetry. View backup settings.</p>
                      </div>
                   </div>
                 </motion.div>

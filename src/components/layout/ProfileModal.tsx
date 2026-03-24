@@ -131,7 +131,7 @@ export default function ProfileModal({ isOpen, onClose, onAvatarUpdated }: Profi
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 python-scrollbar">
+          <div className="flex-1 overflow-y-auto p-6 pb-32 python-scrollbar">
             {message && (
               <div className={`p-4 rounded-xl text-sm mb-6 ${message.type === 'success' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
                 {message.text}
