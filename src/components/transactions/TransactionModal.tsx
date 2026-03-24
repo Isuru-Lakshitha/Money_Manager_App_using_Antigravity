@@ -5,19 +5,20 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { X, Calendar as CalendarIcon, Hash, Type, ArrowRightLeft } from 'lucide-react'
+import { X, Calendar as CalendarIcon, Hash, Type, ArrowRightLeft, Banknote } from 'lucide-react'
 import { format } from 'date-fns'
 import { useAppStore, Transaction, TransactionType, Account } from '@/store'
 import { v4 as uuidv4 } from 'uuid'
 
 const transactionSchema = z.object({
-  type: z.enum(['income', 'expense', 'transfer']),
+  type: z.enum(['income', 'expense', 'transfer', 'loan_payment']),
   amount: z.string().min(1, 'Amount is required'),
   fee_amount: z.string().optional(),
-  categoryId: z.string().optional(), // optional for transfer
+  categoryId: z.string().optional(), 
   accountId: z.string().min(1, 'Select an account'),
-  toAccountId: z.string().optional(), // only required for transfer
-  feeAccountId: z.string().optional(), // optional account to deduct fee from
+  toAccountId: z.string().optional(), 
+  feeAccountId: z.string().optional(), 
+  loanId: z.string().optional(),
   date: z.string(),
   notes: z.string().optional(),
   tags: z.string().optional()
@@ -35,6 +36,14 @@ const transactionSchema = z.object({
         code: z.ZodIssueCode.custom,
         message: 'Cannot transfer to the same account',
         path: ['toAccountId'],
+      });
+    }
+  } else if (data.type === 'loan_payment') {
+    if (!data.loanId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Selecting a target loan is required',
+        path: ['loanId'],
       });
     }
   } else {
@@ -79,9 +88,13 @@ interface TransactionModalProps {
 export default function TransactionModal({ isOpen, onClose, transactionToEdit }: TransactionModalProps) {
   const accounts = useAppStore(state => state.accounts)
   const transactions = useAppStore(state => state.transactions)
+  const loans = useAppStore(state => state.loans)
+  
   const addTransaction = useAppStore(state => state.addTransaction)
   const updateTransaction = useAppStore(state => state.updateTransaction)
   const updateAccount = useAppStore(state => state.updateAccount)
+  const addLoanPayment = useAppStore(state => state.addLoanPayment)
+  const deleteLoanPayment = useAppStore(state => state.deleteLoanPayment)
 
   const { register, handleSubmit, control, watch, setValue, reset, formState: { errors } } = useForm<TransactionForm>({
     resolver: zodResolver(transactionSchema),
@@ -103,6 +116,7 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
         setValue('accountId', transactionToEdit.account_id)
         if (transactionToEdit.to_account_id) setValue('toAccountId', transactionToEdit.to_account_id)
         if (transactionToEdit.category_id) setValue('categoryId', transactionToEdit.category_id)
+        if (transactionToEdit.loan_id) setValue('loanId', transactionToEdit.loan_id)
         setValue('date', transactionToEdit.date)
         setValue('notes', transactionToEdit.notes || '')
       } else {
@@ -114,6 +128,7 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
           accountId: accounts.length > 0 ? accounts[0].id : '',
           toAccountId: accounts.length > 1 ? accounts[1].id : undefined,
           categoryId: undefined,
+          loanId: undefined,
           notes: '',
           tags: ''
         })
@@ -136,7 +151,8 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
       account_id: data.accountId,
       to_account_id: data.type === 'transfer' ? data.toAccountId : undefined,
       fee_account_id: data.type === 'transfer' && numericFee > 0 ? (data.feeAccountId || data.accountId) : undefined,
-      category_id: data.type !== 'transfer' ? data.categoryId : undefined,
+      category_id: data.type === 'expense' || data.type === 'income' ? data.categoryId : undefined,
+      loan_id: data.type === 'loan_payment' ? data.loanId : undefined,
       date: data.date,
       notes: data.notes || null
     }
@@ -146,7 +162,7 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
 
     if (transactionToEdit) {
       // Revert old transaction balances
-      if (transactionToEdit.type === 'expense') {
+      if (transactionToEdit.type === 'expense' || transactionToEdit.type === 'loan_payment') {
         balanceChanges[transactionToEdit.account_id] = (balanceChanges[transactionToEdit.account_id] || 0) + transactionToEdit.amount
       } else if (transactionToEdit.type === 'income') {
         balanceChanges[transactionToEdit.account_id] = (balanceChanges[transactionToEdit.account_id] || 0) - transactionToEdit.amount
@@ -165,7 +181,7 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
     }
 
     // Apply new transaction balances
-    if (data.type === 'expense') {
+    if (data.type === 'expense' || data.type === 'loan_payment') {
       balanceChanges[data.accountId] = (balanceChanges[data.accountId] || 0) - numericAmount
     } else if (data.type === 'income') {
       balanceChanges[data.accountId] = (balanceChanges[data.accountId] || 0) + numericAmount
@@ -192,9 +208,32 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
     })
 
     if (transactionToEdit) {
+      // Clean up orphaned loan payment if type altered from loan_payment to something else
+      if (transactionToEdit.type === 'loan_payment' && data.type !== 'loan_payment') {
+         deleteLoanPayment(transactionToEdit.id);
+      }
+      
       updateTransaction(transactionToEdit.id, newTx)
+      
+      // If changed TO a loan_payment, append to loanPayments (since update fails to map a non-existent item)
+      if (transactionToEdit.type !== 'loan_payment' && data.type === 'loan_payment' && data.loanId) {
+        addLoanPayment({
+           id: newTx.id,
+           loanId: data.loanId,
+           amount: numericAmount,
+           date: data.date
+        })
+      }
     } else {
       addTransaction(newTx)
+      if (data.type === 'loan_payment' && data.loanId) {
+        addLoanPayment({
+           id: newTx.id,
+           loanId: data.loanId,
+           amount: numericAmount,
+           date: data.date
+        })
+      }
     }
 
     onClose()
@@ -233,7 +272,7 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
               {/* Header */}
               <div className="p-6 border-b border-white/5 flex items-center justify-between relative overflow-hidden">
                 <div className={`absolute top-0 left-0 w-full h-1 ${type === 'income' ? 'bg-cyan-500 glow-cyan' :
-                  type === 'transfer' ? 'bg-blue-500 glow-blue' : 'bg-purple-500 glow-purple'
+                  type === 'transfer' ? 'bg-blue-500 glow-blue' : type === 'loan_payment' ? 'bg-orange-500 glow-orange' : 'bg-purple-500 glow-purple'
                   }`} />
                 <h2 className="text-xl font-bold text-white">
                   {transactionToEdit ? 'Edit Transaction' : 'New Transaction'}
@@ -250,11 +289,11 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
                   {/* Type Toggle */}
                   <div className="flex bg-black/40 rounded-xl p-1 border border-white/5 relative">
                     <div
-                      className="absolute top-1 bottom-1 w-[calc(33.33%-4px)] rounded-lg transition-all duration-300 ease-in-out"
+                      className="absolute top-1 bottom-1 w-[calc(25%-4px)] rounded-lg transition-all duration-300 ease-in-out"
                       style={{
-                        background: type === 'expense' ? 'rgba(139, 92, 246, 0.2)' : type === 'income' ? 'rgba(34, 211, 238, 0.2)' : 'rgba(59, 130, 246, 0.2)',
-                        left: type === 'expense' ? '4px' : type === 'income' ? 'calc(33.33% + 2px)' : 'calc(66.66%)',
-                        boxShadow: type === 'expense' ? '0 0 15px rgba(139, 92, 246, 0.3)' : type === 'income' ? '0 0 15px rgba(34, 211, 238, 0.3)' : '0 0 15px rgba(59, 130, 246, 0.3)'
+                        background: type === 'expense' ? 'rgba(139, 92, 246, 0.2)' : type === 'income' ? 'rgba(34, 211, 238, 0.2)' : type === 'transfer' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(249, 115, 22, 0.2)',
+                        left: type === 'expense' ? '4px' : type === 'income' ? 'calc(25%)' : type === 'transfer' ? 'calc(50%)' : 'calc(75% - 4px)',
+                        boxShadow: type === 'expense' ? '0 0 15px rgba(139, 92, 246, 0.3)' : type === 'income' ? '0 0 15px rgba(34, 211, 238, 0.3)' : type === 'transfer' ? '0 0 15px rgba(59, 130, 246, 0.3)' : '0 0 15px rgba(249, 115, 22, 0.3)'
                       }}
                     />
                     <button
@@ -277,6 +316,13 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
                       className={`flex-1 py-2 text-sm font-semibold rounded-lg z-10 transition-colors ${type === 'transfer' ? 'text-blue-400' : 'text-gray-400'}`}
                     >
                       Transfer
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setValue('type', 'loan_payment')}
+                      className={`flex-1 py-2 text-sm font-semibold rounded-lg z-10 transition-colors ${type === 'loan_payment' ? 'text-orange-400' : 'text-gray-400'}`}
+                    >
+                      Loan Pay
                     </button>
                   </div>
 
@@ -334,7 +380,7 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
                     <div className="flex flex-col md:flex-row items-center gap-4">
                       <div className="w-full">
                         <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">
-                          {type === 'transfer' ? 'From Account' : 'Account'}
+                          {type === 'transfer' || type === 'loan_payment' ? 'From Account' : 'Account'}
                         </label>
                         <select
                           {...register('accountId')}
@@ -368,11 +414,32 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
                           </div>
                         </>
                       )}
+
+                      {type === 'loan_payment' && (
+                        <>
+                          <div className="hidden md:flex flex-col items-center justify-center pt-6">
+                            <ArrowRightLeft className="text-gray-500 w-5 h-5" />
+                          </div>
+                          <div className="w-full">
+                            <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">To Target Loan</label>
+                            <select
+                              {...register('loanId')}
+                              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white/30"
+                            >
+                              <option value="">Select Loan</option>
+                              {loans.filter(l => l.status === 'active').map(l => (
+                                <option key={l.id} value={l.id}>{l.name} (Rs. {l.principalAmount.toLocaleString()})</option>
+                              ))}
+                            </select>
+                            {errors.loanId && <p className="text-red-400 text-xs mt-1">{errors.loanId.message}</p>}
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
 
                   {/* Category Grid */}
-                  {type !== 'transfer' && (
+                  {type !== 'transfer' && type !== 'loan_payment' && (
                     <div>
                       <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 block">Category</label>
                       <div className="grid grid-cols-4 gap-3">
@@ -411,7 +478,7 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
                         />
                       </div>
                     </div>
-                    {type !== 'transfer' && (
+                    {type !== 'transfer' && type !== 'loan_payment' && (
                       <div>
                         <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">Tags</label>
                         <div className="relative">
@@ -464,7 +531,9 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
                   form="tx-form"
                   className={`flex-1 py-3 rounded-xl font-semibold text-white transition-all shadow-lg ${type === 'income'
                     ? 'bg-cyan-600 hover:bg-cyan-500 shadow-cyan-500/50'
-                    : type === 'transfer' ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/50' : 'bg-purple-600 hover:bg-purple-500 shadow-purple-500/50'
+                    : type === 'transfer' ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-500/50' 
+                    : type === 'loan_payment' ? 'bg-orange-600 hover:bg-orange-500 shadow-orange-500/50'
+                    : 'bg-purple-600 hover:bg-purple-500 shadow-purple-500/50'
                     }`}
                 >
                   {transactionToEdit ? 'Save Changes' : 'Confirm'}

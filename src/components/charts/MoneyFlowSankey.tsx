@@ -13,7 +13,7 @@ export default function MoneyFlowSankey() {
 
   // Get Top 3 Expense Categories
   const categoryMap: Record<string, number> = {}
-  transactions.filter(t => t.type === 'expense' && t.category_id !== 'goal').forEach(t => {
+  transactions.filter(t => t.type === 'expense' && t.category_id !== 'goal' && t.category_id !== 'transfer').forEach(t => {
     const catId = t.category_id || 'uncategorized'
     categoryMap[catId] = (categoryMap[catId] || 0) + t.amount
   })

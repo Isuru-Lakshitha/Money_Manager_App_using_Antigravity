@@ -14,7 +14,7 @@ export default function ExpenseDonut() {
 
   // Get current month's expenses
   const currentMonthPrefix = format(new Date(), 'yyyy-MM')
-  const monthlyExpenses = transactions.filter(t => t.type === 'expense' && t.category_id !== 'goal' && t.date.startsWith(currentMonthPrefix))
+  const monthlyExpenses = transactions.filter(t => t.type === 'expense' && t.category_id !== 'goal' && t.category_id !== 'transfer' && t.date.startsWith(currentMonthPrefix))
 
   // Aggregate by category
   const categoryMap: Record<string, number> = {}

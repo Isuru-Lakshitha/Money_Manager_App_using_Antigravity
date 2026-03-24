@@ -14,7 +14,7 @@ export default function AnalyticsPage() {
   const transactions = useAppStore(state => state.transactions)
 
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((acc, curr) => acc + curr.amount, 0)
-  const totalExpense = transactions.filter(t => t.type === 'expense').reduce((acc, curr) => acc + curr.amount, 0)
+  const totalExpense = transactions.filter(t => t.type === 'expense' && t.category_id !== 'goal' && t.category_id !== 'transfer').reduce((acc, curr) => acc + curr.amount, 0)
   const totalTransfers = transactions.filter(t => t.type === 'transfer').reduce((acc, curr) => acc + curr.amount, 0)
 
   const savingsRate = totalIncome > 0 ? (((totalIncome - totalExpense) / totalIncome) * 100).toFixed(1) : '0.0'

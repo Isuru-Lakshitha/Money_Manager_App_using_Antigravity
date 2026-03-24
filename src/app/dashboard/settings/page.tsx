@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { Download, Upload, AlertTriangle, FileJson, FileSpreadsheet, Trash2 } from 'lucide-react'
-import { useAppStore } from '@/store'
+import { useAppStore, DEFAULT_CATEGORIES } from '@/store'
 import * as XLSX from 'xlsx'
 
 export default function SettingsPage() {
@@ -16,7 +16,6 @@ export default function SettingsPage() {
     const data = {
       transactions: store.transactions,
       accounts: store.accounts,
-      goals: store.goals,
       categories: store.categories,
       version: '1.0'
     }
@@ -34,16 +33,34 @@ export default function SettingsPage() {
 
   const handleExportExcel = () => {
     // Export Data to Excel
-    const data = store.transactions.map(t => ({
-      ID: t.id,
-      Type: t.type,
-      Amount: t.amount,
-      Fee: t.fee_amount || 0,
-      'Account ID': t.account_id,
-      'To Account ID': t.to_account_id || '',
-      Date: t.date,
-      Notes: t.notes || ''
-    }))
+    const data = store.transactions.map(t => {
+      let categoryName = ''
+      if (t.category_id && t.category_id !== 'goal' && t.category_id !== 'transfer') {
+        const customCat = store.categories.find(c => c.id === t.category_id)
+        if (customCat) {
+          categoryName = customCat.name
+        } else {
+          const defaultCat = DEFAULT_CATEGORIES.find(c => c.id === t.category_id)
+          if (defaultCat) categoryName = defaultCat.name
+        }
+      } else if (t.category_id === 'goal') {
+        categoryName = 'Goal Funding'
+      } else if (t.category_id === 'transfer') {
+        categoryName = 'Transfer'
+      }
+
+      return {
+        ID: t.id,
+        Type: t.type,
+        Amount: t.amount,
+        Fee: t.fee_amount || 0,
+        Category: categoryName,
+        'Account ID': t.account_id,
+        'To Account ID': t.to_account_id || '',
+        Date: t.date,
+        Notes: t.notes || ''
+      }
+    })
     
     const worksheet = XLSX.utils.json_to_sheet(data)
     const workbook = XLSX.utils.book_new()
@@ -63,10 +80,9 @@ export default function SettingsPage() {
         const result = event.target?.result as string
         const parsed = JSON.parse(result)
 
-        if (parsed.transactions && parsed.accounts && parsed.goals) {
+        if (parsed.transactions && parsed.accounts) {
           store.setTransactions(parsed.transactions)
           store.setAccounts(parsed.accounts)
-          store.setGoals(parsed.goals)
           if (parsed.categories) store.setCategories(parsed.categories)
           
           setImportStatus({ type: 'success', message: 'Data successfully restored!' })
@@ -89,7 +105,6 @@ export default function SettingsPage() {
     if (confirmPrompt === 'DELETE') {
       store.setTransactions([])
       store.setAccounts([])
-      store.setGoals([])
       setImportStatus({ type: 'success', message: 'All data has been permanently cleared.' })
     }
   }
