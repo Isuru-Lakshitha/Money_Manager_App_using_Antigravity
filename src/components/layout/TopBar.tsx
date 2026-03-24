@@ -24,6 +24,7 @@ export default function TopBar() {
   const [isFocused, setIsFocused] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
+  const [readReceipts, setReadReceipts] = useState<Record<string, boolean>>({})
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
   const [userMeta, setUserMeta] = useState<{ full_name?: string, avatar_url?: string } | null>(null)
   
@@ -33,6 +34,11 @@ export default function TopBar() {
 
   // Handle clicking outside to close suggestions
   useEffect(() => {
+    try {
+      const stored = localStorage.getItem('voidledger_read_receipts')
+      if (stored) setReadReceipts(JSON.parse(stored))
+    } catch(e) {}
+
     async function loadUser() {
       try {
         const { createClient } = await import('@/utils/supabase/client')
@@ -121,6 +127,36 @@ export default function TopBar() {
     
     return days >= 0 && days <= 7
   })
+
+  // Unify notifications
+  const notifications = [
+    ...upcomingLoans.map(l => ({
+      id: `loan-due-${l.id}`,
+      title: 'Payment Approaching',
+      text: `Your payment for ${l.name} is due within the next 7 days.`,
+      href: '/dashboard/loans'
+    })),
+    {
+      id: 'sys-welcome-1',
+      title: 'Welcome to VoidLedger!',
+      text: 'Your futuristic financial hub is completely synced and secure in the cloud.',
+      href: null // Information only
+    },
+    {
+      id: 'sys-defense-1',
+      title: 'Cloud Defense Active',
+      text: 'Multi-tenant Row Level Security is actively protecting your telemetry. View backup settings.',
+      href: '/dashboard/settings'
+    }
+  ]
+
+  const markAsRead = (id: string) => {
+    const newReceipts = { ...readReceipts, [id]: true }
+    setReadReceipts(newReceipts)
+    localStorage.setItem('voidledger_read_receipts', JSON.stringify(newReceipts))
+  }
+
+  const hasUnread = notifications.some(n => !readReceipts[n.id])
 
   return (
     <header className="h-20 border-b border-white/5 glass-panel rounded-none flex items-center justify-between px-8 sticky top-0 z-40">
@@ -266,7 +302,9 @@ export default function TopBar() {
               className="relative text-gray-400 hover:text-white transition-colors"
             >
               <Bell className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-cyan-500 rounded-full border border-[#0B0F19] shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
+              {hasUnread && (
+                 <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-[#0B0F19] shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+              )}
             </button>
             <AnimatePresence>
               {isNotificationsOpen && (
@@ -282,21 +320,27 @@ export default function TopBar() {
                   </div>
                   <div className="p-2 max-h-[300px] overflow-y-auto python-scrollbar">
                      
-                     {upcomingLoans.map(loan => (
-                        <div key={loan.id} onClick={() => { setIsNotificationsOpen(false); router.push('/dashboard/loans') }} className="p-3 bg-yellow-500/10 rounded-xl border border-yellow-500/20 mb-2 hover:bg-yellow-500/20 transition-colors cursor-pointer">
-                           <p className="text-sm text-yellow-500 font-medium">Payment Approaching</p>
-                           <p className="text-xs text-yellow-500/70 mt-1">Your payment for <strong>{loan.name}</strong> is due within the next 7 days.</p>
-                        </div>
-                     ))}
+                     {notifications.map(n => {
+                        const isRead = readReceipts[n.id]
+                        return (
+                           <div 
+                             key={n.id} 
+                             onClick={() => { 
+                                markAsRead(n.id)
+                                if (n.href) {
+                                   setIsNotificationsOpen(false); 
+                                   router.push(n.href) 
+                                }
+                             }} 
+                             className={`p-3 rounded-xl border mb-2 transition-colors cursor-pointer relative ${isRead ? 'bg-white/5 border-white/5 hover:bg-white/10' : 'bg-cyan-500/10 border-cyan-500/20 hover:bg-cyan-500/20'}`}
+                           >
+                              {!isRead && <span className="absolute top-3 right-3 w-2 h-2 bg-cyan-400 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.8)]" />}
+                              <p className={`text-sm font-medium pr-4 ${isRead ? 'text-gray-400' : 'text-white'}`}>{n.title}</p>
+                              <p className={`text-xs mt-1 ${isRead ? 'text-gray-500' : 'text-gray-400'}`}>{n.text}</p>
+                           </div>
+                        )
+                     })}
 
-                     <div className="p-3 bg-cyan-500/10 rounded-xl border border-cyan-500/20 mb-2">
-                        <p className="text-sm text-white font-medium">Welcome to VoidLedger!</p>
-                        <p className="text-xs text-gray-400 mt-1">Your futuristic financial hub is completely synced and secure in the cloud.</p>
-                     </div>
-                     <div onClick={() => { setIsNotificationsOpen(false); router.push('/dashboard/settings') }} className="p-3 hover:bg-white/5 rounded-xl transition-colors cursor-pointer">
-                        <p className="text-sm text-gray-300 font-medium">Cloud Defense Active</p>
-                        <p className="text-xs text-gray-500 mt-1">Multi-tenant Row Level Security is actively protecting your telemetry. View backup settings.</p>
-                     </div>
                   </div>
                 </motion.div>
               )}
