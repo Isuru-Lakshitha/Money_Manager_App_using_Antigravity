@@ -12,6 +12,7 @@ export interface Category {
 }
 
 export const DEFAULT_CATEGORIES: Category[] = [
+  // Core Expenses
   { id: '1', name: 'Food & Dining', type: 'expense', icon: '🍔' },
   { id: '2', name: 'Utilities', type: 'expense', icon: '⚡' },
   { id: '3', name: 'Transportation', type: 'expense', icon: '🚗' },
@@ -20,12 +21,43 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { id: '6', name: 'Entertainment', type: 'expense', icon: '🎬' },
   { id: '7', name: 'Education', type: 'expense', icon: '📚' },
   { id: '8', name: 'Shopping', type: 'expense', icon: '🛍️' },
+  
+  // Extended Expenses
+  { id: '15', name: 'Groceries', type: 'expense', icon: '🛒' },
+  { id: '16', name: 'Coffee & Snacks', type: 'expense', icon: '☕' },
+  { id: '17', name: 'Fuel / Gas', type: 'expense', icon: '⛽' },
+  { id: '18', name: 'Maintenance & Repairs', type: 'expense', icon: '🔧' },
+  { id: '19', name: 'Internet & Wifi', type: 'expense', icon: '🌐' },
+  { id: '20', name: 'Mobile & Telecom', type: 'expense', icon: '📱' },
+  { id: '21', name: 'Subscriptions', type: 'expense', icon: '🔄' },
+  { id: '22', name: 'Fitness & Gym', type: 'expense', icon: '🏋️' },
+  { id: '23', name: 'Personal Care', type: 'expense', icon: '💆' },
+  { id: '24', name: 'Clothing & Apparel', type: 'expense', icon: '👕' },
+  { id: '25', name: 'Travel & Vacations', type: 'expense', icon: '✈️' },
+  { id: '26', name: 'Insurance', type: 'expense', icon: '🛡️' },
+  { id: '27', name: 'Taxes', type: 'expense', icon: '🏛️' },
+  { id: '28', name: 'Debt Repayment', type: 'expense', icon: '💳' },
+  { id: '29', name: 'Kids & Family', type: 'expense', icon: '👶' },
+  { id: '30', name: 'Pets', type: 'expense', icon: '🐾' },
+  { id: '31', name: 'Charity & Donations', type: 'expense', icon: '❤️' },
+  { id: '32', name: 'Fees & Bank Charges', type: 'expense', icon: '🏦' },
+
+  // Core Incomes
   { id: '9', name: 'Salary', type: 'income', icon: '💰' },
   { id: '10', name: 'Business', type: 'income', icon: '🏢' },
   { id: '11', name: 'Freelance', type: 'income', icon: '💻' },
   { id: '12', name: 'Investments', type: 'income', icon: '📈' },
   { id: '13', name: 'Gifts', type: 'income', icon: '🎁' },
   { id: '14', name: 'Other', type: 'income', icon: '✨' },
+
+  // Extended Incomes
+  { id: '33', name: 'Bonuses', type: 'income', icon: '🎊' },
+  { id: '34', name: 'Side Hustle', type: 'income', icon: '🚀' },
+  { id: '35', name: 'Rentals', type: 'income', icon: '🔑' },
+  { id: '36', name: 'Dividends & Interest', type: 'income', icon: '💸' },
+  { id: '37', name: 'Reimbursements', type: 'income', icon: '🧾' },
+  { id: '38', name: 'Refunds', type: 'income', icon: '↩️' },
+  { id: '39', name: 'Awards & Prizes', type: 'income', icon: '🏆' },
 ]
 
 export interface Account {
@@ -141,9 +173,18 @@ export const useAppStore = create<AppState>()((set, get) => ({
         supabaseApi.getLoanPayments().catch(e => { throw new Error("LoanPayments table: " + e.message) })
       ])
       
+      // Intelligently merge new hardcoded default categories with cloud-fetched categories
+      // This ensures platform updates automatically propagate to existing users without wiping their customs
+      const mergedCategories = [...categories]
+      for (const defaultCat of DEFAULT_CATEGORIES) {
+        if (!mergedCategories.some(c => c.id === defaultCat.id)) {
+          mergedCategories.push(defaultCat)
+        }
+      }
+
       set({
         accounts,
-        categories: categories.length > 0 ? categories : DEFAULT_CATEGORIES,
+        categories: mergedCategories,
         transactions,
         loans,
         loanPayments,
