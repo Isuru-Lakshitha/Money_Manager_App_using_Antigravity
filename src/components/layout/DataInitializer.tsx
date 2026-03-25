@@ -23,13 +23,25 @@ export default function DataInitializer() {
          return { resetTimer: () => {} }
       }
       
-      // Auto-logout robust global inactivity logic
+      // Security: Verify existing cross-tab inactivity BEFORE resetting timer on refresh
+      const existingLastActive = parseInt(localStorage.getItem('voidledger_last_active') || '0')
+      if (existingLastActive > 0 && Date.now() - existingLastActive > 5 * 60 * 1000) {
+         if (!isMockProject) {
+            await supabase.auth.signOut()
+            localStorage.removeItem('voidledger_last_active')
+            router.push('/login')
+            return { resetTimer: () => {} } // Security lock aborts init
+         }
+      }
+
+      // Auto-logout robust global inactivity logic (5 Min)
       localStorage.setItem('voidledger_last_active', Date.now().toString())
       const checkInterval = setInterval(async () => {
          const lastActive = parseInt(localStorage.getItem('voidledger_last_active') || '0')
-         if (lastActive > 0 && Date.now() - lastActive > 15 * 60 * 1000) {
+         if (lastActive > 0 && Date.now() - lastActive > 5 * 60 * 1000) {
             if (!isMockProject) {
                await supabase.auth.signOut()
+               localStorage.removeItem('voidledger_last_active')
                router.push('/login')
             }
          }
