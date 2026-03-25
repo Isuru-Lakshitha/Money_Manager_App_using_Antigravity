@@ -28,8 +28,8 @@ export default function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed bottom-4 left-4 right-4 md:right-auto md:left-4 md:top-1/2 md:-translate-y-1/2 md:bottom-auto z-50 bg-[#0A0A0A]/90 backdrop-blur-xl border border-cyan-500/20 shadow-[0_8px_32px_rgba(6,182,212,0.2)] rounded-2xl md:rounded-[40px] overflow-hidden pb-safe md:pb-0 transition-transform duration-500">
-      <div className="flex flex-row md:flex-col overflow-x-auto hide-scrollbar px-1 md:px-3 py-1.5 md:py-6 items-center justify-between md:justify-start gap-1 md:gap-3">
+    <nav className="fixed bottom-4 left-4 right-4 md:right-auto md:left-6 md:top-1/2 md:-translate-y-1/2 md:bottom-auto z-50 bg-[#0A0A0A]/90 backdrop-blur-xl border border-cyan-500/20 shadow-[0_8px_32px_rgba(6,182,212,0.2)] rounded-2xl md:rounded-[40px] overflow-hidden pb-safe md:pb-0 transition-transform duration-500">
+      <div className="flex flex-row md:flex-col overflow-x-auto hide-scrollbar px-1 md:px-3 py-1.5 md:py-6 items-center justify-between md:justify-center gap-1 md:gap-3">
         {navItems.map((item) => {
           const isActive = pathname === item.href
           

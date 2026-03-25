@@ -59,25 +59,7 @@ const transactionSchema = z.object({
 
 type TransactionForm = z.infer<typeof transactionSchema>
 
-const EXPENSE_CATEGORIES = [
-  { id: '1', name: 'Food & Dining', icon: '🍔' },
-  { id: '2', name: 'Utilities', icon: '⚡' },
-  { id: '3', name: 'Transportation', icon: '🚗' },
-  { id: '4', name: 'Housing / Rent', icon: '🏠' },
-  { id: '5', name: 'Healthcare', icon: '⚕️' },
-  { id: '6', name: 'Entertainment', icon: '🎬' },
-  { id: '7', name: 'Education', icon: '📚' },
-  { id: '8', name: 'Shopping', icon: '🛍️' },
-]
 
-const INCOME_CATEGORIES = [
-  { id: '9', name: 'Salary', icon: '💰' },
-  { id: '10', name: 'Business', icon: '🏢' },
-  { id: '11', name: 'Freelance', icon: '💻' },
-  { id: '12', name: 'Investments', icon: '📈' },
-  { id: '13', name: 'Gifts', icon: '🎁' },
-  { id: '14', name: 'Other', icon: '✨' },
-]
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -89,6 +71,7 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
   const accounts = useAppStore(state => state.accounts)
   const transactions = useAppStore(state => state.transactions)
   const loans = useAppStore(state => state.loans)
+  const allCategories = useAppStore(state => state.categories)
   
   const addTransaction = useAppStore(state => state.addTransaction)
   const updateTransaction = useAppStore(state => state.updateTransaction)
@@ -137,7 +120,7 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
   }, [isOpen, transactionToEdit, accounts, reset, setValue])
 
   const type = watch('type')
-  const categories = type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
+  const categories = allCategories.filter(c => c.type === (type === 'income' ? 'income' : 'expense'))
 
   const onSubmit = (data: TransactionForm) => {
     const numericAmount = Number(data.amount.replace(/,/g, ''))
