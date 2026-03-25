@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { supabaseApi } from '@/utils/supabase/api'
+import { v4 as uuidv4 } from 'uuid'
 
 export type TransactionType = 'income' | 'expense' | 'transfer' | 'loan_payment'
 export type AccountType = 'cash' | 'bank' | 'mobile' | 'credit'
@@ -176,12 +177,22 @@ export const useAppStore = create<AppState>()((set, get) => ({
       ])
       
       // Intelligently merge new hardcoded default categories with cloud-fetched categories
-      // This ensures platform updates automatically propagate to existing users without wiping their customs
+      // This maps by NAME, ensuring valid UUIDs and preventing duplicates if users manually made them
       const mergedCategories = [...categories]
+      const missingCategories: Category[] = []
+      
       for (const defaultCat of DEFAULT_CATEGORIES) {
-        if (!mergedCategories.some(c => c.id === defaultCat.id)) {
-          mergedCategories.push(defaultCat)
+        if (!mergedCategories.some(c => c.name.toLowerCase() === defaultCat.name.toLowerCase())) {
+          const newCat = { ...defaultCat, id: uuidv4() }
+          mergedCategories.push(newCat)
+          missingCategories.push(newCat)
         }
+      }
+
+      // Concurrently push any locally injected default categories straight to Supabase
+      // SO THEY EXIST IN THE DB (Preventing Foreign Key crashes on saving Transactions)
+      if (missingCategories.length > 0) {
+        await Promise.all(missingCategories.map(cat => supabaseApi.createCategory(cat).catch(console.error)))
       }
 
       set({
