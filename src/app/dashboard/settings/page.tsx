@@ -138,12 +138,37 @@ export default function SettingsPage() {
     }
   }
 
-  const handleClearData = () => {
-    const confirmPrompt = window.prompt("Type 'DELETE' to confirm wiping all your data. This cannot be undone.")
+  const handleClearData = async () => {
+    const pwd = window.prompt("SECURITY CHECK: Please enter your VoidLedger password to permanently wipe all data:")
+    if (!pwd) return
+    
+    setImportStatus({ type: 'success', message: 'Authenticating action...' })
+    
+    // Auth Check
+    const { createClient } = await import('@/utils/supabase/client')
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (user?.email) {
+       const { error } = await supabase.auth.signInWithPassword({ email: user.email, password: pwd })
+       if (error) {
+          setImportStatus({ type: 'error', message: 'Authentication Failed: Incorrect password. Wipe aborted.' })
+          return
+       }
+    } else {
+       if (process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://mockproject.supabase.co') {
+           setImportStatus({ type: 'error', message: 'Authentication Failed: No user session found.' })
+           return
+       }
+    }
+    
+    const confirmPrompt = window.prompt("AUTHENTICATION PASSED. Type 'DELETE' to confirm completely wiping all your data. This cannot be undone.")
     if (confirmPrompt === 'DELETE') {
       store.setTransactions([])
       store.setAccounts([])
       setImportStatus({ type: 'success', message: 'All data has been permanently cleared.' })
+    } else {
+      setImportStatus({ type: 'error', message: 'Data wipe aborted.' })
     }
   }
 

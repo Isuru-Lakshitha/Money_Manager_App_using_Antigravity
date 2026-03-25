@@ -20,41 +20,44 @@ export default function DataInitializer() {
       
       if (!data.user && !isMockProject) {
          if (mounted) router.push('/login')
-         return
+         return { resetTimer: () => {} }
       }
       
-      // Auto-logout inactivity logic
-      let timeoutId: NodeJS.Timeout | undefined
+      // Auto-logout robust global inactivity logic
+      localStorage.setItem('voidledger_last_active', Date.now().toString())
+      const checkInterval = setInterval(async () => {
+         const lastActive = parseInt(localStorage.getItem('voidledger_last_active') || '0')
+         if (lastActive > 0 && Date.now() - lastActive > 15 * 60 * 1000) {
+            if (!isMockProject) {
+               await supabase.auth.signOut()
+               router.push('/login')
+            }
+         }
+      }, 30000) // check every 30 seconds
+      
       const resetTimer = () => {
-        if (timeoutId) clearTimeout(timeoutId)
-        timeoutId = setTimeout(async () => {
-          if (!isMockProject) {
-             await supabase.auth.signOut()
-             router.push('/login')
-          }
-        }, 15 * 60 * 1000) // 15 minutes of absolute inactivity
+         localStorage.setItem('voidledger_last_active', Date.now().toString())
       }
       
       window.addEventListener('mousemove', resetTimer)
       window.addEventListener('keydown', resetTimer)
       window.addEventListener('touchstart', resetTimer)
-      resetTimer()
 
       // If the user navigates to the Migration Page directly, don't overwrite the initial state
       if (!pathname.includes('migrate') && mounted) {
         fetchGlobalData()
       }
 
-      return { timeoutId, resetTimer }
+      return { checkInterval, resetTimer }
     }
     
-    let cleanupFuncs: { timeoutId?: NodeJS.Timeout, resetTimer: () => void } | undefined;
+    let cleanupFuncs: { checkInterval?: NodeJS.Timeout, resetTimer: () => void } | undefined;
     init().then(res => { cleanupFuncs = res })
     
     return () => { 
       mounted = false 
       if (cleanupFuncs) {
-        if (cleanupFuncs.timeoutId) clearTimeout(cleanupFuncs.timeoutId)
+        if (cleanupFuncs.checkInterval) clearInterval(cleanupFuncs.checkInterval)
         window.removeEventListener('mousemove', cleanupFuncs.resetTimer)
         window.removeEventListener('keydown', cleanupFuncs.resetTimer)
         window.removeEventListener('touchstart', cleanupFuncs.resetTimer)

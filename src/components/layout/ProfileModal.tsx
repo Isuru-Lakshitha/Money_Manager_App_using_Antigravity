@@ -46,25 +46,60 @@ export default function ProfileModal({ isOpen, onClose, onAvatarUpdated }: Profi
       setLoading(true)
       setMessage(null)
       const file = e.target.files?.[0]
-      if (!file) return
+      if (!file) {
+        setLoading(false)
+        return
+      }
       
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error("No user detected.")
       
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${user.id}-${Math.random()}.${fileExt}`
-      
-      const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file)
-      if (uploadError) throw new Error("Ensure you've created the 'avatars' storage bucket in Supabase! " + uploadError.message)
-      
-      const { data } = supabase.storage.from('avatars').getPublicUrl(fileName)
-      
-      setAvatarUrl(data.publicUrl)
-      setMessage({ type: 'success', text: "Successfully uploaded to Cloud Storage! Click 'Save Profile' to finalize."})
+      // 1. Read file manually
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        const img = new Image()
+        img.onload = async () => {
+           try {
+              // 2. Base64 Compression Canvas
+              const canvas = document.createElement('canvas')
+              const maxDim = 150
+              let width = img.width
+              let height = img.height
+              if (width > height) {
+                if (width > maxDim) { height *= maxDim / width; width = maxDim; }
+              } else {
+                if (height > maxDim) { width *= maxDim / height; height = maxDim; }
+              }
+              canvas.width = width
+              canvas.height = height
+              const ctx = canvas.getContext('2d')
+              ctx?.drawImage(img, 0, 0, width, height)
+              
+              // 3. Compress to lightweight JPEG Base64 payload
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.8)
+              
+              setAvatarUrl(dataUrl)
+              
+              const { error: uploadError } = await supabase.auth.updateUser({
+                 data: { avatar_url: dataUrl }
+              })
+              if (uploadError) throw new Error(uploadError.message)
+              
+              setMessage({ type: 'success', text: "Successfully optimized and saved local image directly to your secure profile."})
+              if (onAvatarUpdated) onAvatarUpdated()
+           } catch (err: any) {
+              setMessage({ type: 'error', text: err.message })
+           } finally {
+              setLoading(false)
+           }
+        }
+        img.src = event.target?.result as string
+      }
+      reader.readAsDataURL(file)
     } catch(err: any) {
       setMessage({ type: 'error', text: err.message })
-    } finally {
       setLoading(false)
+    } finally {
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }

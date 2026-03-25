@@ -195,6 +195,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   deleteTransaction: async (id) => {
+    if (typeof window !== 'undefined' && !window.confirm("Are you sure you want to permanently delete this transaction?")) return;
     const previousState = get().transactions.find(t => t.id === id)
     set((state) => ({
       transactions: state.transactions.filter(t => t.id !== id),
@@ -232,6 +233,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   deleteAccount: async (id) => {
+    if (typeof window !== 'undefined' && !window.confirm("Are you sure you want to permanently delete this account? It will be removed from all reports.")) return;
     const previous = get().accounts.find(a => a.id === id)
     set((state) => ({
       accounts: state.accounts.filter(a => a.id !== id)
@@ -280,6 +282,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   deleteLoan: async (id) => {
+    if (typeof window !== 'undefined' && !window.confirm("Are you sure you want to permanently delete this loan mapping?")) return;
     const previous = get().loans.find(l => l.id === id)
     set((state) => ({
       loans: state.loans.filter(l => l.id !== id),
@@ -307,6 +310,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   },
 
   deleteLoanPayment: async (id) => {
+    if (typeof window !== 'undefined' && !window.confirm("Are you sure you want to permanently delete this payment?")) return;
     set((state) => ({
       loanPayments: state.loanPayments.filter(p => p.id !== id)
     }))
