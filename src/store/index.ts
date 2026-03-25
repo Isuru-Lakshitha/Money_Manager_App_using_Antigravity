@@ -41,6 +41,8 @@ export const DEFAULT_CATEGORIES: Category[] = [
   { id: '30', name: 'Pets', type: 'expense', icon: '🐾' },
   { id: '31', name: 'Charity & Donations', type: 'expense', icon: '❤️' },
   { id: '32', name: 'Fees & Bank Charges', type: 'expense', icon: '🏦' },
+  { id: '40', name: 'Games', type: 'expense', icon: '🎮' },
+  { id: '41', name: 'Other', type: 'expense', icon: '🤔' },
 
   // Core Incomes
   { id: '9', name: 'Salary', type: 'income', icon: '💰' },
