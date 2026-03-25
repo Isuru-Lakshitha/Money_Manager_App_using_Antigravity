@@ -12,7 +12,7 @@ export default function DashboardLayout({
     <div className="min-h-screen bg-[#0B0F19] flex">
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar />
-        <main className="flex-1 p-4 md:p-8 pb-32 md:pb-36 overflow-y-auto">
+        <main className="flex-1 p-4 pb-32 md:p-8 md:pl-28 md:pb-8 overflow-y-auto python-scrollbar">
           {children}
         </main>
       </div>
