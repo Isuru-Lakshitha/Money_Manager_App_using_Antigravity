@@ -229,10 +229,10 @@ export const useAppStore = create<AppState>()((set, get) => ({
         supabaseApi.getAccounts().catch(e => { throw new Error("Accounts table: " + e.message) }),
         supabaseApi.getCategories().catch(e => { throw new Error("Categories table: " + e.message) }),
         supabaseApi.getTransactions().catch(e => { throw new Error("Transactions table: " + e.message) }),
-        supabaseApi.getLoans().catch(e => { throw new Error("Loans table: " + e.message) }),
-        supabaseApi.getLoanPayments().catch(e => { throw new Error("LoanPayments table: " + e.message) }),
-        supabaseApi.getGoals().catch(e => { throw new Error("Goals table: " + e.message) }),
-        supabaseApi.getRecurringTransactions().catch(e => { throw new Error("Recurring txs: " + e.message) }),
+        supabaseApi.getLoans().catch(e => { console.warn("Loans table:", e.message); return [] }),
+        supabaseApi.getLoanPayments().catch(e => { console.warn("LoanPayments table:", e.message); return [] }),
+        supabaseApi.getGoals().catch(e => { console.warn("Goals table:", e.message); return [] }),
+        supabaseApi.getRecurringTransactions().catch(e => { console.warn("Recurring txs:", e.message); return [] }),
         supabaseApi.getUserSettings().catch(e => { return { baseCurrency: 'LKR' } }) // fallback to LKR if error
       ])
       
