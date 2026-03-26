@@ -5,10 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { X, Calendar as CalendarIcon, Hash, Type, ArrowRightLeft, Banknote } from 'lucide-react'
+import { X, Calendar as CalendarIcon, Hash, Type, ArrowRightLeft, Banknote, ScanLine } from 'lucide-react'
 import { format } from 'date-fns'
-import { useAppStore, Transaction, TransactionType, Account } from '@/store'
+import { useAppStore, Transaction, TransactionType, Account, getCurrencySymbol } from '@/store'
 import { v4 as uuidv4 } from 'uuid'
+import ReceiptScannerModal from './ReceiptScannerModal'
 
 const transactionSchema = z.object({
   type: z.enum(['income', 'expense', 'transfer', 'loan_payment']),
@@ -78,6 +79,10 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
   const updateAccount = useAppStore(state => state.updateAccount)
   const addLoanPayment = useAppStore(state => state.addLoanPayment)
   const deleteLoanPayment = useAppStore(state => state.deleteLoanPayment)
+  const baseCurrency = useAppStore(state => state.baseCurrency)
+  const symbol = getCurrencySymbol(baseCurrency)
+
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
 
   const { register, handleSubmit, control, watch, setValue, reset, formState: { errors } } = useForm<TransactionForm>({
     resolver: zodResolver(transactionSchema),
@@ -243,31 +248,41 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              initial={{ scale: 0.95, opacity: 0, y: 50 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              exit={{ scale: 0.95, opacity: 0, y: 50 }}
               onClick={(e) => e.stopPropagation()}
-              className="glass-panel w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh] relative z-50 shadow-2xl"
+              className="glass-panel w-full max-w-xl overflow-hidden flex flex-col max-h-[90dvh] rounded-t-3xl rounded-b-none sm:rounded-2xl relative z-50 shadow-2xl"
             >
               {/* Header */}
-              <div className="p-6 border-b border-white/5 flex items-center justify-between relative overflow-hidden">
+              <div className="p-5 sm:p-6 border-b border-white/5 flex items-center justify-between relative overflow-hidden shrink-0">
                 <div className={`absolute top-0 left-0 w-full h-1 ${type === 'income' ? 'bg-cyan-500 glow-cyan' :
                   type === 'transfer' ? 'bg-blue-500 glow-blue' : type === 'loan_payment' ? 'bg-orange-500 glow-orange' : 'bg-purple-500 glow-purple'
                   }`} />
-                <h2 className="text-xl font-bold text-white">
-                  {transactionToEdit ? 'Edit Transaction' : 'New Transaction'}
+                <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center space-x-3">
+                  <span>{transactionToEdit ? 'Edit Transaction' : 'New Transaction'}</span>
+                  {!transactionToEdit && type === 'expense' && (
+                    <button
+                      onClick={() => setIsScannerOpen(true)}
+                      className="ml-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 p-2 rounded-xl border border-cyan-500/30 transition-all flex items-center space-x-1 sm:space-x-2"
+                      title="Scan Receipt (OCR)"
+                    >
+                      <ScanLine className="w-4 h-4" />
+                      <span className="text-xs font-semibold hidden sm:inline">Scan</span>
+                    </button>
+                  )}
                 </h2>
                 <button onClick={onClose} className="p-2 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-white/5">
-                  <X className="w-5 h-5" />
+                  <X className="w-6 h-6 sm:w-5 sm:h-5" />
                 </button>
               </div>
 
               {/* Body */}
-              <div className="p-6 overflow-y-auto no-scrollbar">
-                <form id="tx-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              <div className="p-5 sm:p-6 overflow-y-auto python-scrollbar pb-8 sm:pb-6">
+                <form id="tx-form" onSubmit={handleSubmit(onSubmit)} className="space-y-5 sm:space-y-6">
 
                   {/* Type Toggle */}
                   <div className="flex bg-black/40 rounded-xl p-1 border border-white/5 relative">
@@ -314,13 +329,13 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
                     <div>
                       <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">Amount</label>
                       <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl text-gray-500 font-numbers select-none">Rs.</span>
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl text-gray-500 font-numbers select-none">{symbol}</span>
                         <input
                           type="text"
                           {...register('amount')}
                           onChange={handleFormatAmount('amount')}
                           placeholder="0.00"
-                          className="w-full bg-transparent border-b-2 border-white/10 py-4 pl-16 pr-4 text-3xl font-numbers text-white placeholder-gray-700 focus:outline-none transition-colors focus:border-white/50"
+                          className="w-full bg-transparent border-b-2 border-white/10 py-3 sm:py-4 pl-14 sm:pl-16 pr-4 text-2xl sm:text-3xl font-numbers text-white placeholder-gray-700 focus:outline-none transition-colors focus:border-white/50"
                         />
                       </div>
                       {errors.amount && <p className="text-red-400 text-xs mt-1">{errors.amount.message}</p>}
@@ -331,7 +346,7 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
                         <div>
                           <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 block">Transfer Fee (Optional)</label>
                           <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg text-gray-500 font-numbers select-none">Rs.</span>
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg text-gray-500 font-numbers select-none">{symbol}</span>
                             <input
                               type="text"
                               {...register('fee_amount')}
@@ -350,7 +365,7 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
                           >
                             <option value="">Same as From Account</option>
                             {accounts.map(acc => (
-                              <option key={acc.id} value={acc.id}>{acc.name} (Rs. {acc.balance.toLocaleString()})</option>
+                              <option key={acc.id} value={acc.id}>{acc.name} ({symbol} {acc.balance.toLocaleString()})</option>
                             ))}
                           </select>
                         </motion.div>
@@ -371,7 +386,7 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
                         >
                           <option value="">Select Account</option>
                           {accounts.map(acc => (
-                            <option key={acc.id} value={acc.id}>{acc.name} (Rs. {acc.balance.toLocaleString()})</option>
+                            <option key={acc.id} value={acc.id}>{acc.name} ({symbol} {acc.balance.toLocaleString()})</option>
                           ))}
                         </select>
                         {errors.accountId && <p className="text-red-400 text-xs mt-1">{errors.accountId.message}</p>}
@@ -390,7 +405,7 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
                             >
                               <option value="">Select Destination</option>
                               {accounts.map(acc => (
-                                <option key={acc.id} value={acc.id}>{acc.name} (Rs. {acc.balance.toLocaleString()})</option>
+                                <option key={acc.id} value={acc.id}>{acc.name} ({symbol} {acc.balance.toLocaleString()})</option>
                               ))}
                             </select>
                             {errors.toAccountId && <p className="text-red-400 text-xs mt-1">{errors.toAccountId.message}</p>}
@@ -411,7 +426,7 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
                             >
                               <option value="">Select Loan</option>
                               {loans.filter(l => l.status === 'active').map(l => (
-                                <option key={l.id} value={l.id}>{l.name} (Rs. {l.principalAmount.toLocaleString()})</option>
+                                <option key={l.id} value={l.id}>{l.name} ({symbol} {l.principalAmount.toLocaleString()})</option>
                               ))}
                             </select>
                             {errors.loanId && <p className="text-red-400 text-xs mt-1">{errors.loanId.message}</p>}
@@ -425,7 +440,7 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
                   {type !== 'transfer' && type !== 'loan_payment' && (
                     <div>
                       <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 block">Category</label>
-                      <div className="grid grid-cols-4 gap-3">
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
                         {categories.map((cat) => {
                           const isSelected = watch('categoryId') === cat.id
                           return (
@@ -501,7 +516,7 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
               </div>
 
               {/* Footer */}
-              <div className="p-6 border-t border-white/5 bg-black/20 flex gap-3">
+              <div className="p-5 sm:p-6 border-t border-white/5 bg-black/20 flex gap-3 shrink-0 mb-4 sm:mb-0">
                 <button
                   type="button"
                   onClick={onClose}
@@ -526,6 +541,15 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
           </motion.div>
         </>
       )}
+      
+      <ReceiptScannerModal 
+        isOpen={isScannerOpen} 
+        onClose={() => setIsScannerOpen(false)} 
+        onScanComplete={(amount, notes) => {
+          if (amount > 0) setValue('amount', amount.toString(), { shouldValidate: true })
+          if (notes) setValue('notes', notes)
+        }} 
+      />
     </AnimatePresence>
   )
 }

@@ -101,12 +101,50 @@ export interface LoanPayment {
   amount: number
 }
 
+export interface Goal {
+  id: string
+  name: string
+  targetAmount: number
+  currentAmount: number
+}
+
+export type Frequency = 'daily' | 'weekly' | 'monthly' | 'yearly'
+
+export const getCurrencySymbol = (currency: string) => {
+  switch (currency) {
+    case 'USD': return '$'
+    case 'EUR': return '€'
+    case 'GBP': return '£'
+    case 'INR': return '₹'
+    case 'AUD': return 'A$'
+    case 'SGD': return 'S$'
+    case 'LKR': default: return 'Rs.'
+  }
+}
+
+export interface RecurringTransaction {
+  id: string
+  name: string
+  amount: number
+  type: TransactionType
+  categoryId?: string | null
+  accountId: string
+  toAccountId?: string | null
+  frequency: Frequency
+  nextDate: string
+  notes?: string
+  isActive: boolean
+}
+
 interface AppState {
   transactions: Transaction[]
   categories: Category[]
   accounts: Account[]
   loans: Loan[]
   loanPayments: LoanPayment[]
+  goals: Goal[]
+  recurringTransactions: RecurringTransaction[]
+  baseCurrency: string
 
   isLoading: boolean
   isGlobalTxModalOpen: boolean
@@ -116,6 +154,9 @@ interface AppState {
   setTransactions: (t: Transaction[]) => void
   setCategories: (c: Category[]) => void
   setAccounts: (a: Account[]) => void
+  setGoals: (g: Goal[]) => void
+  setRecurringTransactions: (r: RecurringTransaction[]) => void
+  setBaseCurrency: (c: string) => void
 
   setLoading: (l: boolean) => void
   setGlobalTxModalOpen: (open: boolean) => void
@@ -142,6 +183,16 @@ interface AppState {
 
   addLoanPayment: (p: LoanPayment) => Promise<void>
   deleteLoanPayment: (id: string) => Promise<void>
+
+  addGoal: (g: Goal) => Promise<void>
+  updateGoal: (id: string, g: Partial<Goal>) => Promise<void>
+  deleteGoal: (id: string) => Promise<void>
+
+  addRecurringTransaction: (rt: RecurringTransaction) => Promise<void>
+  updateRecurringTransaction: (id: string, rt: Partial<RecurringTransaction>) => Promise<void>
+  deleteRecurringTransaction: (id: string) => Promise<void>
+
+  updateBaseCurrency: (currency: string) => Promise<void>
 }
 
 export const useAppStore = create<AppState>()((set, get) => ({
@@ -150,6 +201,9 @@ export const useAppStore = create<AppState>()((set, get) => ({
   accounts: [],
   loans: [],
   loanPayments: [],
+  goals: [],
+  recurringTransactions: [],
+  baseCurrency: 'LKR',
 
   isLoading: true, // Start loading initially
   isGlobalTxModalOpen: false,
@@ -159,6 +213,9 @@ export const useAppStore = create<AppState>()((set, get) => ({
   setTransactions: (transactions) => set({ transactions }),
   setCategories: (categories) => set({ categories }),
   setAccounts: (accounts) => set({ accounts }),
+  setGoals: (goals) => set({ goals }),
+  setRecurringTransactions: (recurringTransactions) => set({ recurringTransactions }),
+  setBaseCurrency: (baseCurrency) => set({ baseCurrency }),
 
   setLoading: (isLoading) => set({ isLoading }),
   setGlobalTxModalOpen: (isGlobalTxModalOpen) => set({ isGlobalTxModalOpen }),
@@ -168,12 +225,15 @@ export const useAppStore = create<AppState>()((set, get) => ({
   fetchGlobalData: async () => {
     set({ isLoading: true })
     try {
-      const [accounts, categories, transactions, loans, loanPayments] = await Promise.all([
+      const [accounts, categories, transactions, loans, loanPayments, goals, recurringTransactions, userSettings] = await Promise.all([
         supabaseApi.getAccounts().catch(e => { throw new Error("Accounts table: " + e.message) }),
         supabaseApi.getCategories().catch(e => { throw new Error("Categories table: " + e.message) }),
         supabaseApi.getTransactions().catch(e => { throw new Error("Transactions table: " + e.message) }),
         supabaseApi.getLoans().catch(e => { throw new Error("Loans table: " + e.message) }),
-        supabaseApi.getLoanPayments().catch(e => { throw new Error("LoanPayments table: " + e.message) })
+        supabaseApi.getLoanPayments().catch(e => { throw new Error("LoanPayments table: " + e.message) }),
+        supabaseApi.getGoals().catch(e => { throw new Error("Goals table: " + e.message) }),
+        supabaseApi.getRecurringTransactions().catch(e => { throw new Error("Recurring txs: " + e.message) }),
+        supabaseApi.getUserSettings().catch(e => { return { baseCurrency: 'LKR' } }) // fallback to LKR if error
       ])
       
       // Intelligently merge new hardcoded default categories with cloud-fetched categories
@@ -201,8 +261,46 @@ export const useAppStore = create<AppState>()((set, get) => ({
         transactions,
         loans,
         loanPayments,
+        goals,
+        recurringTransactions,
+        baseCurrency: userSettings?.baseCurrency || 'LKR',
         isLoading: false
       })
+
+      // Client-side auto-generation of due recurring transactions
+      // To prevent infinite loops or double-charging, we check date and update the nextDate
+      const dueRecurrings = recurringTransactions.filter(rt => rt.isActive && new Date(rt.nextDate) <= new Date());
+      
+      for (const rt of dueRecurrings) {
+        // Create the transaction
+        const newTx: Transaction = {
+          id: uuidv4(),
+          amount: rt.amount,
+          type: rt.type,
+          account_id: rt.accountId,
+          to_account_id: rt.toAccountId,
+          category_id: rt.categoryId,
+          date: new Date().toISOString().split('T')[0], // Today's date
+          notes: `[Auto] ${rt.name} ${rt.notes ? '- ' + rt.notes : ''}`
+        }
+        
+        // Calculate new nextDate
+        const curDate = new Date(rt.nextDate)
+        if (rt.frequency === 'daily') curDate.setDate(curDate.getDate() + 1)
+        if (rt.frequency === 'weekly') curDate.setDate(curDate.getDate() + 7)
+        if (rt.frequency === 'monthly') curDate.setMonth(curDate.getMonth() + 1)
+        if (rt.frequency === 'yearly') curDate.setFullYear(curDate.getFullYear() + 1)
+        
+        await supabaseApi.createTransaction(newTx);
+        await supabaseApi.updateRecurringTransaction(rt.id, { nextDate: curDate.toISOString().split('T')[0] })
+        
+        // Push to local state optimistically
+        set(state => ({
+          transactions: [newTx, ...state.transactions],
+          recurringTransactions: state.recurringTransactions.map(r => r.id === rt.id ? { ...r, nextDate: curDate.toISOString().split('T')[0] } : r)
+        }))
+      }
+
     } catch (error: any) {
       console.error("Cloud Sync Failed! Error details: ", error.message || error)
       set({ isLoading: false })
@@ -372,6 +470,85 @@ export const useAppStore = create<AppState>()((set, get) => ({
       await supabaseApi.deleteLoanPayment(id)
     } catch (error) {
       console.error(error)
+    }
+  },
+
+  addGoal: async (goal) => {
+    set((state) => ({ goals: [...state.goals, goal] }))
+    try {
+      await supabaseApi.createGoal(goal)
+    } catch (error) {
+      console.error(error)
+      set((state) => ({ goals: state.goals.filter(g => g.id !== goal.id) }))
+    }
+  },
+
+  updateGoal: async (id, updated) => {
+    set((state) => ({
+      goals: state.goals.map(g => g.id === id ? { ...g, ...updated } : g)
+    }))
+    try {
+      await supabaseApi.updateGoal(id, updated)
+    } catch (error) {
+      console.error(error)
+    }
+  },
+
+  deleteGoal: async (id) => {
+    if (typeof window !== 'undefined' && !window.confirm("Are you sure you want to delete this goal?")) return;
+    const previous = get().goals.find(g => g.id === id)
+    set((state) => ({ goals: state.goals.filter(g => g.id !== id) }))
+    try {
+      await supabaseApi.deleteGoal(id)
+    } catch (error) {
+      console.error(error)
+      if (previous) {
+        set((state) => ({ goals: [...state.goals, previous] }))
+      }
+    }
+  },
+
+  addRecurringTransaction: async (rt) => {
+    set((state) => ({ recurringTransactions: [...state.recurringTransactions, rt] }))
+    try {
+      await supabaseApi.createRecurringTransaction(rt)
+    } catch (error) {
+      console.error(error)
+      set((state) => ({ recurringTransactions: state.recurringTransactions.filter(r => r.id !== rt.id) }))
+    }
+  },
+
+  updateRecurringTransaction: async (id, updated) => {
+    set((state) => ({
+      recurringTransactions: state.recurringTransactions.map(r => r.id === id ? { ...r, ...updated } : r)
+    }))
+    try {
+      await supabaseApi.updateRecurringTransaction(id, updated)
+    } catch (error) {
+      console.error(error)
+    }
+  },
+
+  deleteRecurringTransaction: async (id) => {
+    if (typeof window !== 'undefined' && !window.confirm("Are you sure you want to delete this recurring transaction?")) return;
+    set((state) => ({
+      recurringTransactions: state.recurringTransactions.filter(r => r.id !== id)
+    }))
+    try {
+      await supabaseApi.deleteRecurringTransaction(id)
+    } catch (error) {
+      console.error(error)
+    }
+  },
+
+  updateBaseCurrency: async (currency) => {
+    const prev = get().baseCurrency
+    set({ baseCurrency: currency })
+    try {
+      await supabaseApi.updateUserSettings({ baseCurrency: currency })
+    } catch (error) {
+      console.error(error)
+      set({ baseCurrency: prev })
     }
   }
 }))

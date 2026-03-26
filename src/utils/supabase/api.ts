@@ -185,5 +185,137 @@ export const supabaseApi = {
     const supabase = createClient()
     const { error } = await supabase.from('loan_payments').delete().eq('id', id)
     if (error) throw error
+  },
+
+  // ================= GOALS =================
+  async getGoals() {
+    const supabase = createClient()
+    const { data, error } = await supabase.from('goals').select('*').order('created_at', { ascending: true })
+    if (error) throw error
+    return (data || []).map(row => ({
+      id: row.id,
+      name: row.name,
+      targetAmount: Number(row.target_amount),
+      currentAmount: Number(row.current_amount)
+    }))
+  },
+  async createGoal(goal: any) {
+    const supabase = createClient()
+    const userId = await getUserId()
+    const { error } = await supabase.from('goals').insert({
+      id: goal.id,
+      user_id: userId,
+      name: goal.name,
+      target_amount: goal.targetAmount,
+      current_amount: goal.currentAmount
+    })
+    if (error) throw error
+  },
+  async updateGoal(id: string, updates: any) {
+    const supabase = createClient()
+    const dbUpdates: any = {}
+    if (updates.name !== undefined) dbUpdates.name = updates.name
+    if (updates.targetAmount !== undefined) dbUpdates.target_amount = updates.targetAmount
+    if (updates.currentAmount !== undefined) dbUpdates.current_amount = updates.currentAmount
+
+    const { error } = await supabase.from('goals').update(dbUpdates).eq('id', id)
+    if (error) throw error
+  },
+  async deleteGoal(id: string) {
+    const supabase = createClient()
+    const { error } = await supabase.from('goals').delete().eq('id', id)
+    if (error) throw error
+  },
+
+  // ================= RECURRING TRANSACTIONS =================
+  async getRecurringTransactions() {
+    const supabase = createClient()
+    const { data, error } = await supabase.from('recurring_transactions').select('*').order('created_at', { ascending: true })
+    if (error) throw error
+    return (data || []).map(row => ({
+      id: row.id,
+      name: row.name,
+      amount: Number(row.amount),
+      type: row.type,
+      categoryId: row.category_id,
+      accountId: row.account_id,
+      toAccountId: row.to_account_id,
+      frequency: row.frequency,
+      nextDate: row.next_date,
+      notes: row.notes,
+      isActive: row.is_active
+    }))
+  },
+  async createRecurringTransaction(rt: any) {
+    const supabase = createClient()
+    const userId = await getUserId()
+    const { error } = await supabase.from('recurring_transactions').insert({
+      id: rt.id,
+      user_id: userId,
+      name: rt.name,
+      amount: rt.amount,
+      type: rt.type,
+      category_id: rt.categoryId,
+      account_id: rt.accountId,
+      to_account_id: rt.toAccountId,
+      frequency: rt.frequency,
+      next_date: rt.nextDate,
+      notes: rt.notes,
+      is_active: rt.isActive
+    })
+    if (error) throw error
+  },
+  async updateRecurringTransaction(id: string, updates: any) {
+    const supabase = createClient()
+    const dbUpdates: any = {}
+    if (updates.name !== undefined) dbUpdates.name = updates.name
+    if (updates.amount !== undefined) dbUpdates.amount = updates.amount
+    if (updates.type !== undefined) dbUpdates.type = updates.type
+    if (updates.categoryId !== undefined) dbUpdates.category_id = updates.categoryId
+    if (updates.accountId !== undefined) dbUpdates.account_id = updates.accountId
+    if (updates.toAccountId !== undefined) dbUpdates.to_account_id = updates.toAccountId
+    if (updates.frequency !== undefined) dbUpdates.frequency = updates.frequency
+    if (updates.nextDate !== undefined) dbUpdates.next_date = updates.nextDate
+    if (updates.notes !== undefined) dbUpdates.notes = updates.notes
+    if (updates.isActive !== undefined) dbUpdates.is_active = updates.isActive
+
+    const { error } = await supabase.from('recurring_transactions').update(dbUpdates).eq('id', id)
+    if (error) throw error
+  },
+  async deleteRecurringTransaction(id: string) {
+    const supabase = createClient()
+    const { error } = await supabase.from('recurring_transactions').delete().eq('id', id)
+    if (error) throw error
+  },
+
+  // ================= USER SETTINGS (MULTI-CURRENCY) =================
+  async getUserSettings() {
+    const supabase = createClient()
+    const userId = await getUserId()
+    const { data, error } = await supabase.from('user_settings').select('*').eq('user_id', userId).single()
+    if (error && error.code !== 'PGRST116') throw error // PGRST116 is not found
+    
+    if (!data) {
+      // Create default settings if not exists
+      const { data: newData, error: insertError } = await supabase.from('user_settings').insert({
+        user_id: userId,
+        base_currency: 'LKR'
+      }).select().single()
+      if (insertError) throw insertError
+      return { baseCurrency: newData.base_currency }
+    }
+    
+    return { baseCurrency: data.base_currency }
+  },
+  
+  async updateUserSettings(settings: { baseCurrency: string }) {
+    const supabase = createClient()
+    const userId = await getUserId()
+    const { error } = await supabase.from('user_settings').upsert({
+      user_id: userId,
+      base_currency: settings.baseCurrency,
+      created_at: new Date().toISOString()
+    })
+    if (error) throw error
   }
 }

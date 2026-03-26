@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, User, Lock, Save, Camera, Mail } from 'lucide-react'
+import { X, User, Lock, Save, Camera, Mail, Globe } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
+import { useAppStore } from '@/store'
 
 interface ProfileModalProps {
   isOpen: boolean
@@ -22,6 +23,11 @@ export default function ProfileModal({ isOpen, onClose, onAvatarUpdated }: Profi
   // Security State
   const [newPassword, setNewPassword] = useState('')
   
+  // App State
+  const baseCurrency = useAppStore(state => state.baseCurrency)
+  const updateBaseCurrency = useAppStore(state => state.updateBaseCurrency)
+  const [localCurrency, setLocalCurrency] = useState(baseCurrency)
+
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   const supabase = createClient()
@@ -29,8 +35,9 @@ export default function ProfileModal({ isOpen, onClose, onAvatarUpdated }: Profi
   useEffect(() => {
     if (isOpen) {
       loadProfile()
+      setLocalCurrency(baseCurrency)
     }
-  }, [isOpen])
+  }, [isOpen, baseCurrency])
 
   const loadProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -122,6 +129,10 @@ export default function ProfileModal({ isOpen, onClose, onAvatarUpdated }: Profi
       
       if (error) throw error
       
+      if (localCurrency !== baseCurrency) {
+        await updateBaseCurrency(localCurrency)
+      }
+
       setMessage({ type: 'success', text: 'Profile completely updated!' })
       if (onAvatarUpdated) onAvatarUpdated()
     } catch (err: any) {
@@ -265,6 +276,26 @@ export default function ProfileModal({ isOpen, onClose, onAvatarUpdated }: Profi
                       />
                     </div>
                     <p className="text-[10px] text-gray-500 mt-2">Leave blank to auto-generate from your display name.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Base Currency</label>
+                    <div className="relative">
+                      <Globe className="absolute left-3 top-3 w-5 h-5 text-gray-500" />
+                      <select
+                        value={localCurrency}
+                        onChange={e => setLocalCurrency(e.target.value)}
+                        className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 appearance-none"
+                      >
+                        <option value="LKR">LKR - Sri Lankan Rupee</option>
+                        <option value="USD">USD - US Dollar</option>
+                        <option value="EUR">EUR - Euro</option>
+                        <option value="GBP">GBP - British Pound</option>
+                        <option value="INR">INR - Indian Rupee</option>
+                        <option value="AUD">AUD - Australian Dollar</option>
+                        <option value="SGD">SGD - Singapore Dollar</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 

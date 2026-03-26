@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, ArrowDownRight, ArrowUpRight, ArrowRightLeft, Edit2, Trash2, MoreVertical } from 'lucide-react'
+import { Plus, ArrowDownRight, ArrowUpRight, ArrowRightLeft, Edit2, Trash2, MoreVertical, Repeat } from 'lucide-react'
 import { format } from 'date-fns'
-import { useAppStore, Transaction, DEFAULT_CATEGORIES } from '@/store'
+import { useAppStore, Transaction, DEFAULT_CATEGORIES, getCurrencySymbol } from '@/store'
+import RecurringModal from '@/components/transactions/RecurringModal'
 
 export default function TransactionsPage() {
   const transactions = useAppStore(state => state.transactions)
@@ -16,9 +17,12 @@ export default function TransactionsPage() {
   const setGlobalTxToEdit = useAppStore(state => state.setGlobalTxToEdit)
   const globalSearchTerm = useAppStore(state => state.globalSearchTerm)
   const setGlobalSearchTerm = useAppStore(state => state.setGlobalSearchTerm)
+  const baseCurrency = useAppStore(state => state.baseCurrency)
+  const symbol = getCurrencySymbol(baseCurrency)
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
+  const [isRecurringModalOpen, setRecurringModalOpen] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -123,17 +127,29 @@ export default function TransactionsPage() {
           <p className="text-gray-400">View and manage your entire financial history.</p>
         </div>
 
-        <button
-          onClick={() => {
-            setGlobalTxToEdit(null)
-            setGlobalTxModalOpen(true)
-          }}
-          className="bg-cyan-500 hover:bg-cyan-400 text-black px-4 py-3 rounded-xl transition-all glow-cyan font-semibold flex items-center justify-center space-x-2 w-full md:w-auto"
-        >
-          <Plus className="w-5 h-5" />
-          <span>New Transaction</span>
-        </button>
+        <div className="flex space-x-2 w-full md:w-auto">
+          <button
+            onClick={() => setRecurringModalOpen(true)}
+            className="bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 px-4 py-3 rounded-xl transition-all font-semibold flex items-center justify-center space-x-2"
+          >
+            <Repeat className="w-5 h-5" />
+            <span className="hidden sm:inline">Recurring</span>
+          </button>
+          
+          <button
+            onClick={() => {
+              setGlobalTxToEdit(null)
+              setGlobalTxModalOpen(true)
+            }}
+            className="flex-1 md:flex-none bg-cyan-500 hover:bg-cyan-400 text-black px-4 py-3 rounded-xl transition-all glow-cyan font-semibold flex items-center justify-center space-x-2"
+          >
+            <Plus className="w-5 h-5" />
+            <span>New Transaction</span>
+          </button>
+        </div>
       </div>
+      
+      <RecurringModal isOpen={isRecurringModalOpen} onClose={() => setRecurringModalOpen(false)} />
 
       {/* Search Summary Block */}
       {globalSearchTerm && (
@@ -151,11 +167,11 @@ export default function TransactionsPage() {
           <div className="flex items-center gap-6">
             <div className="text-right">
               <p className="text-[10px] text-gray-500 uppercase tracking-wider">Total Income</p>
-              <p className="text-cyan-400 font-numbers font-semibold">Rs. {searchIncome.toLocaleString()}</p>
+              <p className="text-cyan-400 font-numbers font-semibold">{symbol} {searchIncome.toLocaleString()}</p>
             </div>
             <div className="text-right border-l border-white/10 pl-6">
               <p className="text-[10px] text-gray-500 uppercase tracking-wider">Total Expense</p>
-              <p className="text-purple-400 font-numbers font-semibold">Rs. {searchExpense.toLocaleString()}</p>
+              <p className="text-purple-400 font-numbers font-semibold">{symbol} {searchExpense.toLocaleString()}</p>
             </div>
             <button
               onClick={() => setGlobalSearchTerm('')}
@@ -243,10 +259,10 @@ export default function TransactionsPage() {
 
                       <td className="p-4 align-top text-right">
                         <div className={`text-sm font-bold font-numbers ${colorClass}`}>
-                          {isIncome ? '+' : isTransfer ? '' : '-'} Rs. {tx.amount.toLocaleString()}
+                          {isIncome ? '+' : isTransfer ? '' : '-'}{symbol} {tx.amount.toLocaleString()}
                         </div>
                         {isTransfer && tx.fee_amount ? (
-                          <div className="text-xs text-red-400 mt-1 font-numbers">Fee: Rs. {tx.fee_amount}</div>
+                          <div className="text-xs text-red-400 mt-1 font-numbers">Fee: {symbol} {tx.fee_amount}</div>
                         ) : null}
                       </td>
 

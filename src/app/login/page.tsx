@@ -47,7 +47,7 @@ export default function LoginPage() {
         const { error } = await supabase.auth.updateUser({ password })
         if (error) throw error
         setMsg("Password successfully updated. Going to Dashboard...")
-        setTimeout(() => router.push('/dashboard'), 1500)
+        setTimeout(() => window.location.href = '/dashboard', 1500)
       } else if (mode === 'forgot') {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: window.location.origin + '/login',
@@ -60,14 +60,14 @@ export default function LoginPage() {
           password,
         })
         if (error) throw error
-        router.push('/dashboard')
+        window.location.href = '/dashboard'
       } else {
         const { error } = await supabase.auth.signUp({
           email,
           password,
         })
         if (error) throw error
-        router.push('/dashboard')
+        window.location.href = '/dashboard'
       }
     } catch (err: any) {
       setError(err.message)
@@ -123,7 +123,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all flex-1"
-                  required={mode !== 'forgot'}
+                  required
                 />
               </div>
             </div>

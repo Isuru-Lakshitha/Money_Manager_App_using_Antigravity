@@ -97,6 +97,27 @@ create table budgets (
   unique (user_id, category_id, month)
 );
 
+-- RECURRING_TRANSACTIONS TABLE
+create table recurring_transactions (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  name text not null,
+  amount numeric(12, 2) not null check (amount > 0),
+  type text not null check (type in ('income', 'expense', 'transfer')),
+  category_id uuid references categories(id) on delete set null,
+  account_id uuid references accounts(id) on delete cascade not null,
+  to_account_id uuid references accounts(id) on delete cascade,
+  frequency text not null check (frequency in ('daily', 'weekly', 'monthly', 'yearly')),
+  next_date date not null default current_date,
+  notes text,
+  is_active boolean default true,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  check (
+    (type = 'transfer' and to_account_id is not null) or
+    (type != 'transfer' and to_account_id is null)
+  )
+);
+
 -- TRANSACTION_TAGS (Many-to-Many join table)
 create table transaction_tags (
   transaction_id uuid references transactions(id) on delete cascade not null,
@@ -114,6 +135,7 @@ alter table transaction_tags enable row level security;
 alter table loans enable row level security;
 alter table loan_payments enable row level security;
 alter table budgets enable row level security;
+alter table recurring_transactions enable row level security;
 
 -- Policies for Categories
 create policy "Users can view their own categories" on categories for select using (auth.uid() = user_id);
@@ -171,3 +193,22 @@ create policy "Users can view their own budgets" on budgets for select using (au
 create policy "Users can insert their own budgets" on budgets for insert with check (auth.uid() = user_id);
 create policy "Users can update their own budgets" on budgets for update using (auth.uid() = user_id);
 create policy "Users can delete their own budgets" on budgets for delete using (auth.uid() = user_id);
+
+-- Policies for Recurring Transactions
+create policy "Users can view their own recurring transactions" on recurring_transactions for select using (auth.uid() = user_id);
+create policy "Users can insert their own recurring transactions" on recurring_transactions for insert with check (auth.uid() = user_id);
+create policy "Users can update their own recurring transactions" on recurring_transactions for update using (auth.uid() = user_id);
+create policy "Users can delete their own recurring transactions" on recurring_transactions for delete using (auth.uid() = user_id);
+
+-- USER_SETTINGS TABLE
+create table user_settings (
+  user_id uuid references auth.users(id) on delete cascade primary key,
+  base_currency text not null default 'LKR',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table user_settings enable row level security;
+create policy "Users can view their own settings" on user_settings for select using (auth.uid() = user_id);
+create policy "Users can insert their own settings" on user_settings for insert with check (auth.uid() = user_id);
+create policy "Users can update their own settings" on user_settings for update using (auth.uid() = user_id);
+

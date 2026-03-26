@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Search, Bell, Plus, User, X, ArrowUpRight, ArrowDownRight, ArrowRightLeft } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useAppStore } from '@/store'
+import { useAppStore, getCurrencySymbol } from '@/store'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import ProfileModal from './ProfileModal'
@@ -20,6 +20,8 @@ export default function TopBar() {
   const accounts = useAppStore(state => state.accounts)
   const loans = useAppStore(state => state.loans)
   const loanPayments = useAppStore(state => state.loanPayments)
+  const baseCurrency = useAppStore(state => state.baseCurrency)
+  const symbol = getCurrencySymbol(baseCurrency)
 
   const [isFocused, setIsFocused] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
@@ -209,11 +211,11 @@ export default function TopBar() {
                       <div className="grid grid-cols-2 gap-2">
                         <div className="bg-black/40 rounded-lg p-2 border border-cyan-500/10">
                           <p className="text-[10px] text-gray-500 uppercase">Total Income</p>
-                          <p className="font-numbers text-cyan-400 font-semibold">Rs. {totalIncome.toLocaleString()}</p>
+                          <p className="font-numbers text-cyan-400 font-semibold">{symbol} {totalIncome.toLocaleString()}</p>
                         </div>
                         <div className="bg-black/40 rounded-lg p-2 border border-purple-500/10">
                           <p className="text-[10px] text-gray-500 uppercase">Total Expenses</p>
-                          <p className="font-numbers text-purple-400 font-semibold">Rs. {totalExpense.toLocaleString()}</p>
+                          <p className="font-numbers text-purple-400 font-semibold">{symbol} {totalExpense.toLocaleString()}</p>
                         </div>
                       </div>
                     </div>
@@ -246,7 +248,7 @@ export default function TopBar() {
                             </div>
                           </div>
                           <div className={`font-numbers font-medium ${isIncome ? 'text-cyan-400' : 'text-gray-300'}`}>
-                            {isIncome ? '+' : '-'}${tx.amount.toLocaleString()}
+                            {isIncome ? '+' : '-'}{symbol}{tx.amount.toLocaleString()}
                           </div>
                         </button>
                       )
@@ -397,7 +399,8 @@ export default function TopBar() {
                        const { createClient } = await import('@/utils/supabase/client')
                        const supabase = createClient()
                        await supabase.auth.signOut()
-                       router.push('/login')
+                       router.refresh()
+                       setTimeout(() => window.location.href = '/login', 250)
                     }} className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 rounded-xl transition-colors font-medium">
                       Disconnect Session
                     </button>

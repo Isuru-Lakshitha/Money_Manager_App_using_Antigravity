@@ -10,7 +10,7 @@ import DailySpendingTracker from '@/components/charts/DailySpendingTracker'
 import ExpenseDonut from '@/components/charts/ExpenseDonut'
 import IncomeExpenseBarChart from '@/components/charts/IncomeExpenseBarChart'
 import MoneyFlowSankey from '@/components/charts/MoneyFlowSankey'
-import { useAppStore } from '@/store'
+import { useAppStore, getCurrencySymbol } from '@/store'
 import { format } from 'date-fns'
 
 export default function DashboardPage() {
@@ -20,6 +20,8 @@ export default function DashboardPage() {
 
   const accounts = useAppStore(state => state.accounts)
   const transactions = useAppStore(state => state.transactions)
+  const baseCurrency = useAppStore(state => state.baseCurrency)
+  const symbol = getCurrencySymbol(baseCurrency)
 
   useEffect(() => {
     setMounted(true)
@@ -69,7 +71,7 @@ export default function DashboardPage() {
               <Activity className="w-4 h-4 text-cyan-400" />
             </div>
           </div>
-          <h2 className="text-3xl lg:text-4xl font-bold text-white font-numbers tracking-tight mb-2">Rs. {totalBalance.toLocaleString()}</h2>
+          <h2 className="text-3xl lg:text-4xl font-bold text-white font-numbers tracking-tight mb-2">{symbol} {totalBalance.toLocaleString()}</h2>
           <div className="flex items-center text-cyan-400 text-sm">
             <ArrowUpRight className="w-4 h-4 mr-1" />
             <span>Updated live</span>
@@ -90,7 +92,7 @@ export default function DashboardPage() {
               <ArrowUpRight className="w-4 h-4 text-purple-400" />
             </div>
           </div>
-          <h2 className="text-2xl lg:text-3xl font-bold text-white font-numbers tracking-tight mb-2">Rs. {monthlyIncome.toLocaleString()}</h2>
+          <h2 className="text-2xl lg:text-3xl font-bold text-white font-numbers tracking-tight mb-2">{symbol} {monthlyIncome.toLocaleString()}</h2>
           <div className="flex items-center text-gray-500 text-sm">
             <span>This month's earnings</span>
           </div>
@@ -110,7 +112,7 @@ export default function DashboardPage() {
               <ArrowDownRight className="w-4 h-4 text-orange-400" />
             </div>
           </div>
-          <h2 className="text-2xl lg:text-3xl font-bold text-white font-numbers tracking-tight mb-2">Rs. {monthlyExpense.toLocaleString()}</h2>
+          <h2 className="text-2xl lg:text-3xl font-bold text-white font-numbers tracking-tight mb-2">{symbol} {monthlyExpense.toLocaleString()}</h2>
           <div className="flex items-center text-gray-500 text-sm">
             <span>This month's spending</span>
           </div>
