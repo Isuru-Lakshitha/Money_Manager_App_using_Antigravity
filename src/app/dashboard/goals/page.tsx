@@ -90,7 +90,12 @@ export default function GoalsPage() {
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-white line-clamp-1">{goal.name}</h3>
-                      <p className="text-sm font-numbers text-gray-400">Target: Rs. {goal.targetAmount.toLocaleString()}</p>
+                      <div className="flex flex-col gap-0.5">
+                        <p className="text-sm font-numbers text-gray-400">Target: Rs. {goal.targetAmount.toLocaleString()}</p>
+                        {goal.deadline && (
+                          <p className="text-xs text-cyan-500/80">Deadline: {new Date(goal.deadline).toLocaleDateString()}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">

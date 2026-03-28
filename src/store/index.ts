@@ -106,6 +106,7 @@ export interface Goal {
   name: string
   targetAmount: number
   currentAmount: number
+  deadline?: string
 }
 
 export type Frequency = 'daily' | 'weekly' | 'monthly' | 'yearly'

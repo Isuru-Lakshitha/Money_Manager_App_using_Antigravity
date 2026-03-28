@@ -3,12 +3,12 @@
 import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Camera, Upload, ScanLine, CheckCircle2 } from 'lucide-react'
-import Tesseract from 'tesseract.js'
+import { useAppStore } from '@/store'
 
 interface Props {
   isOpen: boolean
   onClose: () => void
-  onScanComplete: (amount: number, suggestedNotes: string) => void
+  onScanComplete: (amount: number, suggestedNotes: string, categoryId?: string, accountId?: string) => void
 }
 
 export default function ReceiptScannerModal({ isOpen, onClose, onScanComplete }: Props) {
@@ -17,6 +17,9 @@ export default function ReceiptScannerModal({ isOpen, onClose, onScanComplete }:
   const [progress, setProgress] = useState(0)
   const [statusText, setStatusText] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const accounts = useAppStore(state => state.accounts)
+  const categories = useAppStore(state => state.categories)
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -32,45 +35,46 @@ export default function ReceiptScannerModal({ isOpen, onClose, onScanComplete }:
   const performScan = async () => {
     if (!image) return
     setIsScanning(true)
-    setProgress(0)
-    setStatusText('Initializing engine...')
+    setProgress(30)
+    setStatusText('Uploading to AI Core...')
 
     try {
-      const result = await Tesseract.recognize(
-        image,
-        'eng',
-        {
-          logger: m => {
-            if (m.status === 'recognizing text') {
-              setProgress(Math.floor(m.progress * 100))
-              setStatusText('Extracting data...')
-            }
-          }
-        }
-      )
+      const res = await fetch('/api/ocr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image })
+      })
 
-      setStatusText('Analyzing extracted numbers...')
-      
-      const text = result.data.text
-      // Simple logic to find the largest currency-like number (presumably Total)
-      const numberRegex = /[\d,]+\.\d{2}/g
-      const matches = text.match(numberRegex)
-      
-      let maxAmount = 0
-      if (matches) {
-        const numbers = matches.map(m => parseFloat(m.replace(/,/g, '')))
-        maxAmount = Math.max(...numbers)
+      if (!res.ok) {
+        throw new Error('AI Scan failed')
       }
 
-      // Very simple keyword grabbing for notes
-      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 5)
-      const possibleVendor = lines.length > 0 ? lines[0] : 'Scanned Receipt'
+      setProgress(80)
+      setStatusText('Processing Results...')
+
+      const data = await res.json()
+      
+      let matchedCategoryId = undefined
+      if (data.category && typeof data.category === 'string') {
+        const term = data.category.toLowerCase().split(' ')[0]
+        const found = categories.find(c => c.name.toLowerCase().includes(term))
+        if (found) matchedCategoryId = found.id
+      }
+
+      let matchedAccountId = undefined
+      if (data.sourceAccount && typeof data.sourceAccount === 'string') {
+        const found = accounts.find(c => c.name.toLowerCase().includes(data.sourceAccount.toLowerCase()) || data.sourceAccount.toLowerCase().includes(c.type))
+        if (found) matchedAccountId = found.id
+      }
+
+      setProgress(100)
+      setStatusText('Done!')
 
       setTimeout(() => {
         setIsScanning(false)
-        onScanComplete(maxAmount, `[Scanned] ${possibleVendor}`)
+        onScanComplete(Number(data.amount) || 0, data.notes || '', matchedCategoryId, matchedAccountId)
         onClose()
-      }, 1000)
+      }, 800)
 
     } catch (error) {
       console.error(error)

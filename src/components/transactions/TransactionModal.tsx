@@ -545,9 +545,11 @@ export default function TransactionModal({ isOpen, onClose, transactionToEdit }:
       <ReceiptScannerModal 
         isOpen={isScannerOpen} 
         onClose={() => setIsScannerOpen(false)} 
-        onScanComplete={(amount, notes) => {
+        onScanComplete={(amount: number, notes: string, categoryId?: string, accountId?: string) => {
           if (amount > 0) setValue('amount', amount.toString(), { shouldValidate: true })
           if (notes) setValue('notes', notes)
+          if (categoryId) setValue('categoryId', categoryId)
+          if (accountId) setValue('accountId', accountId)
         }} 
       />
     </AnimatePresence>

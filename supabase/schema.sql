@@ -51,6 +51,7 @@ create table goals (
   name text not null,
   target_amount numeric(12, 2) not null check (target_amount > 0),
   current_amount numeric(12, 2) not null default 0 check (current_amount >= 0),
+  deadline date,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

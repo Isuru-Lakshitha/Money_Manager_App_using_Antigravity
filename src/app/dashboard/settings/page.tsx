@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { Download, Upload, AlertTriangle, FileJson, FileSpreadsheet, Trash2 } from 'lucide-react'
+import { Download, Upload, AlertTriangle, FileJson, FileSpreadsheet, Trash2, Globe } from 'lucide-react'
 import { useAppStore, DEFAULT_CATEGORIES } from '@/store'
 import { supabaseApi } from '@/utils/supabase/api'
 import * as XLSX from 'xlsx'
@@ -178,6 +178,37 @@ export default function SettingsPage() {
         <h1 className="text-3xl font-bold text-white mb-1">Settings & Backup</h1>
         <p className="text-gray-400">Manage your local data, create backups, and restore from files.</p>
       </div>
+
+      {/* Preferences Section */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass-panel p-6 border-blue-500/20 relative overflow-hidden mb-6"
+      >
+        <div className="mb-6">
+          <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-4">
+            <Globe className="w-6 h-6 text-blue-400" />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">Regional Preferences</h2>
+          <p className="text-gray-400 text-sm">Set your default currency for the entire dashboard.</p>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-400 mb-1.5">Base Currency</label>
+          <select
+            value={store.baseCurrency}
+            onChange={(e) => store.updateBaseCurrency(e.target.value)}
+            className="w-full max-w-xs bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-blue-500/50 transition-colors appearance-none"
+          >
+            <option value="LKR">LKR - Sri Lankan Rupee (Rs.)</option>
+            <option value="USD">USD - US Dollar ($)</option>
+            <option value="EUR">EUR - Euro (€)</option>
+            <option value="GBP">GBP - British Pound (£)</option>
+            <option value="INR">INR - Indian Rupee (₹)</option>
+            <option value="AUD">AUD - Australian Dollar (A$)</option>
+            <option value="SGD">SGD - Singapore Dollar (S$)</option>
+          </select>
+        </div>
+      </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         

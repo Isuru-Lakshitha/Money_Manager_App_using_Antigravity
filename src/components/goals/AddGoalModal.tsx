@@ -16,6 +16,7 @@ export default function AddGoalModal({ isOpen, onClose, goalToEdit }: Props) {
   const [name, setName] = useState(goalToEdit?.name || '')
   const [targetAmount, setTargetAmount] = useState(goalToEdit?.targetAmount?.toString() || '')
   const [currentAmount, setCurrentAmount] = useState(goalToEdit?.currentAmount?.toString() || '0')
+  const [deadline, setDeadline] = useState(goalToEdit?.deadline || '')
   const [loading, setLoading] = useState(false)
 
   const addGoal = useAppStore(state => state.addGoal)
@@ -30,14 +31,16 @@ export default function AddGoalModal({ isOpen, onClose, goalToEdit }: Props) {
         await updateGoal(goalToEdit.id, {
           name,
           targetAmount: Number(targetAmount),
-          currentAmount: Number(currentAmount)
+          currentAmount: Number(currentAmount),
+          deadline: deadline || undefined
         })
       } else {
         await addGoal({
           id: uuidv4(),
           name,
           targetAmount: Number(targetAmount),
-          currentAmount: Number(currentAmount)
+          currentAmount: Number(currentAmount),
+          deadline: deadline || undefined
         })
       }
       onClose()
@@ -125,6 +128,17 @@ export default function AddGoalModal({ isOpen, onClose, goalToEdit }: Props) {
                   placeholder="0.00"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1.5">Target Deadline (Optional)</label>
+              <input
+                type="date"
+                value={deadline}
+                onChange={e => setDeadline(e.target.value)}
+                className="w-full bg-black/40 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
+                min={new Date().toISOString().split('T')[0]}
+              />
             </div>
 
             <button

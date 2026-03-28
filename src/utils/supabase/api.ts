@@ -196,7 +196,8 @@ export const supabaseApi = {
       id: row.id,
       name: row.name,
       targetAmount: Number(row.target_amount),
-      currentAmount: Number(row.current_amount)
+      currentAmount: Number(row.current_amount),
+      deadline: row.deadline
     }))
   },
   async createGoal(goal: any) {
@@ -207,7 +208,8 @@ export const supabaseApi = {
       user_id: userId,
       name: goal.name,
       target_amount: goal.targetAmount,
-      current_amount: goal.currentAmount
+      current_amount: goal.currentAmount,
+      deadline: goal.deadline
     })
     if (error) throw error
   },
@@ -217,6 +219,7 @@ export const supabaseApi = {
     if (updates.name !== undefined) dbUpdates.name = updates.name
     if (updates.targetAmount !== undefined) dbUpdates.target_amount = updates.targetAmount
     if (updates.currentAmount !== undefined) dbUpdates.current_amount = updates.currentAmount
+    if (updates.deadline !== undefined) dbUpdates.deadline = updates.deadline
 
     const { error } = await supabase.from('goals').update(dbUpdates).eq('id', id)
     if (error) throw error

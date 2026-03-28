@@ -60,14 +60,16 @@ export default function LoginPage() {
           password,
         })
         if (error) throw error
-        window.location.href = '/dashboard'
+        router.push('/dashboard')
+        router.refresh()
       } else {
         const { error } = await supabase.auth.signUp({
           email,
           password,
         })
         if (error) throw error
-        window.location.href = '/dashboard'
+        router.push('/dashboard')
+        router.refresh()
       }
     } catch (err: any) {
       setError(err.message)

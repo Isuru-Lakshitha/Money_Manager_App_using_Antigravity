@@ -11,7 +11,8 @@ import {
   Search,
   FileText,
   Settings,
-  Target
+  Target,
+  TrendingUp
 } from 'lucide-react'
 
 const navItems = [
@@ -21,6 +22,7 @@ const navItems = [
   { name: 'Accounts', href: '/dashboard/accounts', icon: Wallet },
   { name: 'Loans', href: '/dashboard/loans', icon: Banknote },
   { name: 'Goals', href: '/dashboard/goals', icon: Target },
+  { name: 'Invest', href: '/dashboard/investments', icon: TrendingUp },
   { name: 'Search', href: '/dashboard/search', icon: Search },
   { name: 'Reports', href: '/dashboard/reports', icon: FileText },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
