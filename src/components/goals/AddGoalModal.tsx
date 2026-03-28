@@ -44,8 +44,9 @@ export default function AddGoalModal({ isOpen, onClose, goalToEdit }: Props) {
         })
       }
       onClose()
-    } catch (error) {
+    } catch (error: any) {
       console.error(error)
+      alert("Failed to save goal. Database error: " + (error?.message || "Verify your Supabase SQL tables are up to date."))
     } finally {
       setLoading(false)
     }

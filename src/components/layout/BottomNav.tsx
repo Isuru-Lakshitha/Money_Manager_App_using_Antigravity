@@ -2,16 +2,17 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { motion } from 'framer-motion'
 import {
   LayoutDashboard,
   ArrowLeftRight,
   BarChart3,
   Wallet,
   Banknote,
+  Target,
   Search,
   FileText,
   Settings,
-  Target,
   TrendingUp
 } from 'lucide-react'
 
@@ -32,25 +33,30 @@ export default function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed bottom-4 left-4 right-4 md:right-auto md:left-6 md:top-1/2 md:-translate-y-1/2 md:bottom-auto z-50 bg-[#0A0A0A]/90 backdrop-blur-xl border border-cyan-500/20 shadow-[0_8px_32px_rgba(6,182,212,0.2)] rounded-2xl md:rounded-[32px] overflow-hidden pb-safe md:pb-0 transition-transform duration-500">
-      <div className="flex flex-row md:flex-col overflow-x-auto hide-scrollbar px-1 md:px-2 py-1.5 md:py-4 items-center justify-between md:justify-center gap-1 md:gap-2">
+    <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 md:right-auto md:left-6 md:top-1/2 md:-translate-y-1/2 md:translate-x-0 md:bottom-auto bg-black/40 backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] rounded-[2rem] overflow-hidden max-w-[95vw]">
+      <div className="flex flex-row md:flex-col overflow-x-auto overflow-y-hidden hide-scrollbar px-3 py-3 md:px-4 md:py-6 items-center gap-2 snap-x snap-mandatory">
         {navItems.map((item) => {
           const isActive = pathname === item.href
           
           return (
-            <Link key={item.name} href={item.href} className="flex-shrink-0 group">
-              <div
-                title={item.name}
-                className={`flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-xl relative transition-all duration-300 ${
-                  isActive ? 'text-cyan-400 font-bold' : 'text-gray-500 hover:text-cyan-200'
+            <Link key={item.name} href={item.href} className="flex-shrink-0 relative group snap-center" title={item.name}>
+              <motion.div
+                whileHover={{ scale: 1.15, y: -2 }}
+                whileTap={{ scale: 0.9 }}
+                className={`flex flex-col items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-2xl relative z-10 transition-colors duration-300 ${
+                  isActive ? 'text-white font-bold' : 'text-gray-500 group-hover:text-cyan-300'
                 }`}
               >
-                <div
-                  className={`absolute inset-0 bg-cyan-500/20 border border-cyan-400/30 rounded-xl md:rounded-2xl shadow-[0_0_15px_rgba(6,182,212,0.4)] transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'}`}
-                />
+                {isActive && (
+                  <motion.div
+                    layoutId="mac-dock-pill"
+                    className="absolute inset-0 bg-cyan-500/20 shadow-[0_0_20px_rgba(6,182,212,0.4)] border border-cyan-400/30 rounded-2xl md:rounded-[1.25rem] z-0"
+                    transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                  />
+                )}
                 
-                <item.icon className={`w-5 h-5 md:w-6 md:h-6 relative z-10 transition-transform duration-300 ${isActive ? 'scale-110 drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]' : 'group-hover:-translate-y-1 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(6,182,212,0.3)]'}`} />
-              </div>
+                <item.icon className={`w-5 h-5 md:w-6 md:h-6 relative z-10 transition-transform duration-300 ${isActive ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]' : ''}`} />
+              </motion.div>
             </Link>
           )
         })}

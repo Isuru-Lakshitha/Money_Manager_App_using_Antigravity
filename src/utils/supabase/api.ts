@@ -203,14 +203,18 @@ export const supabaseApi = {
   async createGoal(goal: any) {
     const supabase = createClient()
     const userId = await getUserId()
-    const { error } = await supabase.from('goals').insert({
+    const payload: any = {
       id: goal.id,
       user_id: userId,
       name: goal.name,
       target_amount: goal.targetAmount,
-      current_amount: goal.currentAmount,
-      deadline: goal.deadline
-    })
+      current_amount: goal.currentAmount
+    }
+    if (goal.deadline !== undefined) {
+      payload.deadline = goal.deadline
+    }
+
+    const { error } = await supabase.from('goals').insert(payload)
     if (error) throw error
   },
   async updateGoal(id: string, updates: any) {

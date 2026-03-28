@@ -1,81 +1,45 @@
-# Implementation Plan: Enhancements & Bug Fixes
+# Navigation Overhaul, Investments Cleanup, & Bug Fixes
 
-This document outlines the approach to address the five key issues you've highlighted in your request.
+Here is the plan to address your feedback regarding the navigation bar, the dummy data on the Investments page, and the goal saving bug.
 
 ## User Review Required
 
-> [!WARNING]
-> **Database Migration Needed**: To make Goals time-based, we need to add a `deadline` column to the `goals` table in your Supabase database. You will need to run a quick SQL command in your Supabase SQL Editor:
-> `ALTER TABLE goals ADD COLUMN deadline date;`
-> Let me know if you would like me to provide a script to run this automatically for you.
-
 > [!IMPORTANT]
-> **OCR Accuracy**: Currently, the app uses `Tesseract.js` (running entirely in your browser) to scan receipts. While we can improve its parsing code to try and detect categories and source accounts (e.g., searching for "Visa", "Cash", "Restaurant"), Tesseract is fundamentally basic text extraction. 
-> 
-> **Question for you**: Would you like to keep using Tesseract with an improved logic parser, or would you prefer I integrate Google Gemini (via `@google/generative-ai`) which will guarantee incredible accuracy for extracting Amounts, Categories, and Source Accounts? If Gemini, you will need to provide a free API key.
+> **Why your goals aren't saving:** The reason your goals disappear after you save them is because your Supabase database doesn't have the `deadline` column yet. When the app tries to save the new goal to the cloud, the database rejects it, and the app resets.
+> **The Fix:** You **must** go to your Supabase SQL Editor and run this short command: 
+> `ALTER TABLE goals ADD COLUMN deadline date;`
+> I will also add an error alert to the Goal saving modal so that if it fails again in the future, it clearly tells you exactly what went wrong instead of silently failing.
+
+> [!NOTE]
+> **Navigation Bar Redesign:** You mentioned the nav bar is a mess (10 items is too many to show at once on a phone). I propose upgrading the `BottomNav.tsx` to a **macOS-style floating dock**. It will be a beautifully animated, scrollable glass pill. When you hover or tap on items, they will smoothly magnify (using `framer-motion`), and I will implement a sliding slick indicator behind the active tab.
 
 ## Proposed Changes
 
 ---
-### Authentication & Login Flow
-
-To fix the issue where you have to refresh the page after logging in to successfully reach the dashboard:
-
-#### [MODIFY] [page.tsx](file:///c:/Users/Isuru/Downloads/Antigravity/src/app/login/page.tsx)
-- Replace `window.location.href = '/dashboard'` with Next.js specific routing (`router.refresh()` followed by `router.push('/dashboard')`). This gives `middleware.ts` the proper time to recognize the Supabase session cookie before rendering the protected dashboard.
-
----
-### Time-Based Goals
-
-Goals will be updated to include a target deadline.
-
-#### [MODIFY] [schema.sql](file:///c:/Users/Isuru/Downloads/Antigravity/supabase/schema.sql)
-- Append the `deadline date` column to the `goals` table creation script.
-
-#### [MODIFY] [index.ts](file:///c:/Users/Isuru/Downloads/Antigravity/src/store/index.ts)
-- Add `deadline?: string` to the `Goal` TypeScript interface.
-
-#### [MODIFY] [api.ts](file:///c:/Users/Isuru/Downloads/Antigravity/src/utils/supabase/api.ts)
-- Update `createGoal`, `getGoals`, and `updateGoal` functions to map the `target_date`/`deadline` column to and from the database.
-
-#### [MODIFY] [AddGoalModal.tsx](file:///c:/Users/Isuru/Downloads/Antigravity/src/components/goals/AddGoalModal.tsx)
-- Add a new date input field to allow selecting a target date/deadline.
-
-#### [MODIFY] [page.tsx](file:///c:/Users/Isuru/Downloads/Antigravity/src/app/dashboard/goals/page.tsx)
-- Enhance the UI cards to display the selected deadline and dynamically calculate the "days remaining" to reach the goal.
-
----
-### Multi-Currency Settings
-
-The underlying logic for Multi-Currency already exists in your store and database, but there is no User Interface to actually configure it.
-
-#### [MODIFY] [page.tsx](file:///c:/Users/Isuru/Downloads/Antigravity/src/app/dashboard/settings/page.tsx)
-- Inject a new beautifully-styled "Preferences / Currency" section into the settings dashboard, allowing users to actively switch their Base Currency between USD, EUR, GBP, LKR, etc.
-
----
-### Investment Tab
+### Navigation Polish (macOS Dock Style)
 
 #### [MODIFY] [BottomNav.tsx](file:///c:/Users/Isuru/Downloads/Antigravity/src/components/layout/BottomNav.tsx)
-- Add an "Investments" nav item linking to `/dashboard/investments` with a relevant icon (`TrendingUp`).
-
-#### [NEW] [page.tsx](file:///c:/Users/Isuru/Downloads/Antigravity/src/app/dashboard/investments/page.tsx)
-- Create the core skeleton page for the new Investments view, applying the glass-morphic standard UI layout.
+- Break away from the static grid/flex layout and implement a `framer-motion` powered layout.
+- Introduce hover magnification (items scale up smoothly when hovered, like a Mac dock).
+- Add a smooth sliding active background pill using `layoutId` so the active tab visually "slides" across the nav bar when you click different routes.
+- Improve horizontal scrolling properties for mobile so it smoothly snaps.
 
 ---
-### OCR Receipt Scanner Improvements
+### Investments Page Clean-up
 
-#### [MODIFY] [ReceiptScannerModal.tsx](file:///c:/Users/Isuru/Downloads/Antigravity/src/components/transactions/ReceiptScannerModal.tsx)
-- Update the Tesseract output parser to use enhanced Regex.
-- Implement keyword mappings to infer the **Source Account** (e.g. text containing "cash", "visa", "mastercard") and **Category** (e.g. text containing "market", "food", "uber").
-- Update the callback `onScanComplete` to also pass back `suggestedCategory` and `suggestedAccount`.
+#### [MODIFY] [page.tsx](file:///c:/Users/Isuru/Downloads/Antigravity/src/app/dashboard/investments/page.tsx)
+- Remove the dummy hardcoded `VOO`, `BTC`, `AAPL` assets.
+- Replace it with a stunning "Empty State" module that uses an animated illustration to prompt the user to "Connect a Broker" or "Add your first asset", making it clear that it's waiting for real data.
+
+---
+### Goals Bug Fix / Error Visibility
+
+#### [MODIFY] [AddGoalModal.tsx](file:///c:/Users/Isuru/Downloads/Antigravity/src/components/goals/AddGoalModal.tsx)
+- Enhance the `catch (error)` block in `handleSubmit` to trigger a browser alert or visible error text if Supabase rejects the insertion. This directly informs the user if a database column is missing.
+
+#### [MODIFY] [api.ts](file:///c:/Users/Isuru/Downloads/Antigravity/src/utils/supabase/api.ts)
+- Strip out `deadline` from the insertion payload if it is not explicitly provided by the user. This ensures standard goals (without deadlines) save successfully even if the database is slightly out of sync.
 
 ## Open Questions
-- Please confirm if you want to proceed with Tesseract string parsing improvements for OCR, or if I should integrate Gemini for more robust AI vision receipt scanning.
-- Note that adding the Investment tab only creates the visual shell for managing investments. Do you have a specific database schema you want to track for investments (e.g. Stocks, Crypto, Real Estate)? Or should I keep it visual-only for now?
-
-## Verification Plan
-1. Test login form to assure smooth transition to `/dashboard` without manual refreshes.
-2. Verify Settings page allows toggling currency and see the changes reflect universally.
-3. Add a new goal with a deadline and verify it renders gracefully.
-4. Test Bottom Navigation to ensure the new Investments tab functions.
-5. Simulate a receipt scan to verify the new categorization logic works.
+- Does the macOS-style dock sound like the right approach for the navigation bar, or would you prefer I hide the extra items inside a "More" drawer menu?
+- Please confirm if you are able to run the SQL command in Supabase for the goals issue, or let me know if you need help finding where to run it!
