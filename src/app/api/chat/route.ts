@@ -47,10 +47,15 @@ User Guidelines:
 3. Keep responses concise unless explicitly asked for a deep dive.`
 
     // Convert messages array to Gemini format
-    const history = messages.slice(0, -1).map((m: any) => ({
+    let history = messages.slice(0, -1).map((m: any) => ({
       role: m.role === 'user' ? 'user' : 'model',
       parts: [{ text: m.content }]
     }))
+    
+    // Gemini API strictly requires history to begin with a 'user' role
+    while (history.length > 0 && history[0].role !== 'user') {
+      history.shift()
+    }
     
     let currentMessage = messages[messages.length - 1].content
 
