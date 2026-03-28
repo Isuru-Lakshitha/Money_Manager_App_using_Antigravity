@@ -29,7 +29,8 @@ export async function POST(req: Request) {
 
     const { messages, financialContext } = await req.json()
     const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+    // Upgraded to stable generic 'gemini-pro' to prevent v1beta 404 errors with 1.5-flash routing
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
 
     const systemPrompt = `You are Void, an elite, highly intelligent AI personal economist natively integrated into the user's Money Manager app. 
 You speak precisely, clearly, and professionally, but with a touch of premium cyberpunk flair. 
@@ -47,20 +48,30 @@ User Guidelines:
 3. Keep responses concise unless explicitly asked for a deep dive.`
 
     // Convert messages array to Gemini format
-    let history = messages.slice(0, -1).map((m: any) => ({
+    const rawHistory = messages.slice(0, -1).map((m: any) => ({
       role: m.role === 'user' ? 'user' : 'model',
       parts: [{ text: m.content }]
     }))
     
-    // Gemini API strictly requires history to begin with a 'user' role
-    while (history.length > 0 && history[0].role !== 'user') {
-      history.shift()
+    // Gemini API strictly requires history to begin with 'user', alternate strictly, and end with 'model' before a new user message
+    let history: any[] = []
+    let expectedRole = 'user'
+    for (const msg of rawHistory) {
+      if (msg.role === expectedRole) {
+        history.push(msg)
+        expectedRole = expectedRole === 'user' ? 'model' : 'user'
+      }
+    }
+    
+    // Pop trailing 'user' if the history doesn't neatly end with a 'model' reply
+    if (history.length > 0 && history[history.length - 1].role !== 'model') {
+       history.pop()
     }
     
     let currentMessage = messages[messages.length - 1].content
 
-    // Inject system prompt invisibly into the first message of the session
-    if (messages.length === 1) {
+    // Inject system prompt invisibly into the first organically sent user message
+    if (history.length === 0) {
        currentMessage = `${systemPrompt}\n\nUSER QUERY:\n${currentMessage}`
     }
 
