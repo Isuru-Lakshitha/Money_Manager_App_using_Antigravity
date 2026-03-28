@@ -3,7 +3,19 @@ import { NextResponse } from 'next/server'
 
 export async function POST(req: Request) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY
+    let apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) {
+      try {
+        const fs = require('fs')
+        const path = require('path')
+        const envFile = fs.readFileSync(path.join(process.cwd(), '.env.local'), 'utf-8')
+        const match = envFile.match(/GEMINI_API_KEY=(.+)/)
+        if (match) apiKey = match[1].trim()
+      } catch (e) {
+        console.warn('Could not parse .env.local dynamically fallback.')
+      }
+    }
+    
     if (!apiKey) {
       return NextResponse.json({ error: 'Missing GEMINI_API_KEY in .env.local' }, { status: 400 })
     }

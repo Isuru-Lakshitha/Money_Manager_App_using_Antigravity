@@ -14,9 +14,12 @@ export async function createClient() {
         },
         setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
+            cookiesToSet.forEach(({ name, value, options }) => {
+              // SECURITY OVERRIDE: Strip maxAge and expires to force a true Browser Session Cookie.
+              // This strictly logs the user out whenever they close the browser tab natively.
+              const secureOptions = { ...options, maxAge: undefined, expires: undefined }
+              cookieStore.set(name, value, secureOptions)
+            })
           } catch {
             // The `setAll` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing
