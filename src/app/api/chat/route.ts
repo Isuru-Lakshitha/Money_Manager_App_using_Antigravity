@@ -29,8 +29,7 @@ export async function POST(req: Request) {
 
     const { messages, financialContext } = await req.json()
     const genAI = new GoogleGenerativeAI(apiKey)
-    // Upgraded to stable generic 'gemini-pro' to prevent v1beta 404 errors with 1.5-flash routing
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
 
     const systemPrompt = `You are Void, an elite, highly intelligent AI personal economist natively integrated into the user's Money Manager app. 
 You speak precisely, clearly, and professionally, but with a touch of premium cyberpunk flair. 
