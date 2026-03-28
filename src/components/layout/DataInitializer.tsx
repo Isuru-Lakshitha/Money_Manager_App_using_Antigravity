@@ -23,6 +23,19 @@ export default function DataInitializer() {
          return { resetTimer: () => {} }
       }
       
+      // EXTREME SECURITY: Force logout if this is a completely new Browser Tab/Window
+      // (sessionStorage survives F5 refreshes, but dies if you close the tab)
+      if (typeof window !== 'undefined') {
+        const isNewTab = !sessionStorage.getItem('voidledger_tab_session')
+        if (isNewTab && data.user && !isMockProject) {
+           await supabase.auth.signOut()
+           sessionStorage.setItem('voidledger_tab_session', '1')
+           if (mounted) router.push('/login')
+           return { resetTimer: () => {} }
+        }
+        sessionStorage.setItem('voidledger_tab_session', '1')
+      }
+      
       // Security: Verify existing cross-tab inactivity BEFORE resetting timer on refresh
       const existingLastActive = parseInt(localStorage.getItem('voidledger_last_active') || '0')
       if (existingLastActive > 0 && Date.now() - existingLastActive > 5 * 60 * 1000) {

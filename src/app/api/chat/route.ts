@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 export async function POST(req: Request) {
   try {
     let apiKey = process.env.GEMINI_API_KEY
+    let fallbackLog = ''
     if (!apiKey) {
       try {
         const fs = require('fs')
@@ -13,14 +14,17 @@ export async function POST(req: Request) {
           const envFile = fs.readFileSync(envPath, 'utf-8')
           const match = envFile.match(/GEMINI_API_KEY=([^\s\r\n]+)/)
           if (match) apiKey = match[1].trim()
+          else fallbackLog = 'Regex failed to match GEMINI_API_KEY inside file.'
+        } else {
+          fallbackLog = `File not found at: ${envPath}`
         }
-      } catch (e) {
-        // Silently skip fs fallback
+      } catch (e: any) {
+        fallbackLog = `Require FS failed: ${e.message}`
       }
     }
     
     if (!apiKey) {
-      return NextResponse.json({ error: `Missing GEMINI_API_KEY. (Process memory keys: ${Object.keys(process.env).filter(k => k.includes('GEMINI')).join(',')})` }, { status: 400 })
+      return NextResponse.json({ error: `Missing GEMINI_API_KEY. Fallback Error: ${fallbackLog} | CWD: ${process.cwd()}` }, { status: 400 })
     }
 
     const { messages, financialContext } = await req.json()
