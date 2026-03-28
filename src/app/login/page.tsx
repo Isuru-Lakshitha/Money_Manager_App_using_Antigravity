@@ -60,16 +60,20 @@ export default function LoginPage() {
           password,
         })
         if (error) throw error
-        router.push('/dashboard')
-        router.refresh()
+        setMsg("Authentication successful. Redirecting...")
+        setTimeout(() => {
+          window.location.href = '/dashboard'
+        }, 800)
       } else {
         const { error } = await supabase.auth.signUp({
           email,
           password,
         })
         if (error) throw error
-        router.push('/dashboard')
-        router.refresh()
+        setMsg("Account created! Redirecting...")
+        setTimeout(() => {
+          window.location.href = '/dashboard'
+        }, 800)
       }
     } catch (err: any) {
       setError(err.message)

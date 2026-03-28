@@ -53,7 +53,13 @@ export default function InvestmentsPage() {
           </div>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-panel p-6 flex flex-col items-center justify-center text-center border-dashed border-2 border-white/10 hover:border-cyan-500/50 transition-colors cursor-pointer group hover:bg-cyan-500/5">
+        <motion.div 
+           initial={{ opacity: 0, y: 20 }} 
+           animate={{ opacity: 1, y: 0 }} 
+           transition={{ delay: 0.2 }} 
+           onClick={() => alert('Broker API Integration (Robinhood, Binance, etc.) is currently in development and will be available in a future update!')}
+           className="glass-panel p-6 flex flex-col items-center justify-center text-center border-dashed border-2 border-white/10 hover:border-cyan-500/50 transition-colors cursor-pointer group hover:bg-cyan-500/5"
+        >
            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
              <Download className="w-6 h-6 text-gray-400 group-hover:text-cyan-400" />
            </div>
@@ -78,7 +84,10 @@ export default function InvestmentsPage() {
           <p className="text-gray-400 px-4 md:px-0 max-w-sm mb-8 mx-auto leading-relaxed">
             Your portfolio is completely clean. Connect your broker APIs or add your first stock, crypto, or real-estate asset manually to visualize your growth.
           </p>
-          <button className="bg-white hover:bg-gray-100 text-black px-6 py-3 rounded-xl transition-all font-bold shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-105 active:scale-95">
+          <button 
+            onClick={() => alert('Manual Asset entering is coming soon! Check back on the next update.')}
+            className="bg-white hover:bg-gray-100 text-black px-6 py-3 rounded-xl transition-all font-bold shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:scale-105 active:scale-95"
+          >
             Manually Add Asset
           </button>
         </motion.div>
