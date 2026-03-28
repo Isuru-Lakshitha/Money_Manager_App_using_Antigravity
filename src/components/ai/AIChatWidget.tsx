@@ -107,10 +107,10 @@ export default function AIChatWidget() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               transition={{ type: 'spring', bounce: 0.3 }}
-              className="absolute bottom-0 right-0 w-[calc(100vw-32px)] md:w-[400px] h-[550px] max-h-[80vh] glass-panel border border-cyan-500/30 rounded-3xl overflow-hidden flex flex-col shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-50"
+              className="absolute bottom-0 right-0 w-[calc(100vw-32px)] md:w-[400px] h-[550px] max-h-[80vh] bg-[#090D14] border border-cyan-500/30 rounded-3xl overflow-hidden flex flex-col shadow-[0_20px_60px_rgba(0,0,0,0.8)] z-50"
             >
               {/* Header */}
-              <div className="bg-black/60 backdrop-blur-md border-b border-white/10 p-4 flex justify-between items-center z-10">
+              <div className="bg-[#111827] border-b border-white/10 p-4 flex justify-between items-center z-10">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center border border-cyan-500/30">
                     <Bot className="w-6 h-6 text-cyan-400" />
@@ -131,7 +131,7 @@ export default function AIChatWidget() {
               </div>
 
               {/* Chat Log */}
-              <div className="flex-1 overflow-y-auto python-scrollbar p-4 space-y-4 bg-gradient-to-b from-transparent to-black/40">
+              <div className="flex-1 overflow-y-auto python-scrollbar p-4 space-y-4 bg-[#0B0F19]">
                 {messages.map((m, idx) => (
                   <motion.div 
                     key={idx}
@@ -167,7 +167,7 @@ export default function AIChatWidget() {
               </div>
 
               {/* Input Area */}
-              <div className="p-4 bg-black/60 backdrop-blur-xl border-t border-white/10">
+              <div className="p-4 bg-[#111827] border-t border-white/10">
                 <form onSubmit={handleSend} className="relative flex items-center">
                   <input
                     type="text"
