@@ -2,7 +2,6 @@ import TopBar from '@/components/layout/TopBar'
 import GlobalModals from '@/components/layout/GlobalModals'
 import DataInitializer from '@/components/layout/DataInitializer'
 import BottomNav from '@/components/layout/BottomNav'
-import AIChatWidget from '@/components/ai/AIChatWidget'
 
 export default function DashboardLayout({
   children,
@@ -18,7 +17,6 @@ export default function DashboardLayout({
         </main>
       </div>
       <BottomNav />
-      <AIChatWidget />
       <GlobalModals />
       <DataInitializer />
     </div>
