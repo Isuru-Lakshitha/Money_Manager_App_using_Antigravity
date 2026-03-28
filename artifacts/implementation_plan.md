@@ -1,45 +1,64 @@
-# Navigation Overhaul, Investments Cleanup, & Bug Fixes
+# Implementation Plan: AI Economist & Investment Engine
 
-Here is the plan to address your feedback regarding the navigation bar, the dummy data on the Investments page, and the goal saving bug.
+Based on your request, we will build out the **AI Chat Assistant** (Option 1) and the **Fully Functioning Investment Tracker** (Option 3).
 
 ## User Review Required
 
-> [!IMPORTANT]
-> **Why your goals aren't saving:** The reason your goals disappear after you save them is because your Supabase database doesn't have the `deadline` column yet. When the app tries to save the new goal to the cloud, the database rejects it, and the app resets.
-> **The Fix:** You **must** go to your Supabase SQL Editor and run this short command: 
-> `ALTER TABLE goals ADD COLUMN deadline date;`
-> I will also add an error alert to the Goal saving modal so that if it fails again in the future, it clearly tells you exactly what went wrong instead of silently failing.
+> [!WARNING]
+> **Database Changes Required:** Because we are building out a real Investment tracker, your database needs a table to store your stocks and crypto! Before or while I build this, you will need to run the following in your Supabase SQL Editor:
+> ```sql
+> create table public.assets (
+>   id uuid primary key,
+>   user_id uuid references auth.users not null,
+>   symbol text not null,
+>   name text not null,
+>   asset_type text not null,
+>   quantity numeric not null,
+>   average_buy_price numeric not null,
+>   created_at timestamp with time zone default timezone('utc'::text, now()) not null
+> );
+> ```
 
-> [!NOTE]
-> **Navigation Bar Redesign:** You mentioned the nav bar is a mess (10 items is too many to show at once on a phone). I propose upgrading the `BottomNav.tsx` to a **macOS-style floating dock**. It will be a beautifully animated, scrollable glass pill. When you hover or tap on items, they will smoothly magnify (using `framer-motion`), and I will implement a sliding slick indicator behind the active tab.
+> [!IMPORTANT]
+> **Gemini API Key:** You already have `GEMINI_API_KEY` in your `.env.local` for the receipt scanner. The new AI Chat Assistant will automatically use this same key to become your personal economist. Ensure it is a valid active key.
 
 ## Proposed Changes
 
 ---
-### Navigation Polish (macOS Dock Style)
+### 1. The Global AI Chat Assistant
 
-#### [MODIFY] [BottomNav.tsx](file:///c:/Users/Isuru/Downloads/Antigravity/src/components/layout/BottomNav.tsx)
-- Break away from the static grid/flex layout and implement a `framer-motion` powered layout.
-- Introduce hover magnification (items scale up smoothly when hovered, like a Mac dock).
-- Add a smooth sliding active background pill using `layoutId` so the active tab visually "slides" across the nav bar when you click different routes.
-- Improve horizontal scrolling properties for mobile so it smoothly snaps.
+#### [NEW] [AIChatWidget.tsx](file:///c:/Users/Isuru/Downloads/Antigravity/src/components/ai/AIChatWidget.tsx)
+- A highly polished floating action button in the bottom right corner of the app.
+- Expands into a sleek glassmorphic chat interface.
+- Reads your entire financial profile (`transactions`, `accounts`, `goals`) and injects it into a secure system prompt.
 
----
-### Investments Page Clean-up
-
-#### [MODIFY] [page.tsx](file:///c:/Users/Isuru/Downloads/Antigravity/src/app/dashboard/investments/page.tsx)
-- Remove the dummy hardcoded `VOO`, `BTC`, `AAPL` assets.
-- Replace it with a stunning "Empty State" module that uses an animated illustration to prompt the user to "Connect a Broker" or "Add your first asset", making it clear that it's waiting for real data.
+#### [NEW] [api/chat/route.ts](file:///c:/Users/Isuru/Downloads/Antigravity/src/app/api/chat/route.ts)
+- A Next.js API route that connects to `@google/generative-ai`.
+- Processes your questions like "How much did I spend on food this month?" and responds utilizing your exact JSON transaction history as conversational context.
 
 ---
-### Goals Bug Fix / Error Visibility
+### 2. Live Investment Tracker
 
-#### [MODIFY] [AddGoalModal.tsx](file:///c:/Users/Isuru/Downloads/Antigravity/src/components/goals/AddGoalModal.tsx)
-- Enhance the `catch (error)` block in `handleSubmit` to trigger a browser alert or visible error text if Supabase rejects the insertion. This directly informs the user if a database column is missing.
+#### [NEW] [AddAssetModal.tsx](file:///c:/Users/Isuru/Downloads/Antigravity/src/components/investments/AddAssetModal.tsx)
+- A sleek modal allowing you to input assets by Ticker Symbol (e.g. `BTC`, `AAPL`, `TSLA`), the amount you own, and the average price you bought it at.
+
+#### [MODIFY] [store/index.ts](file:///c:/Users/Isuru/Downloads/Antigravity/src/store/index.ts)
+- Introduce the new `Asset` interface.
+- Implement `addAsset`, `updateAsset`, `deleteAsset`, and `fetchGlobalData` modifications.
 
 #### [MODIFY] [api.ts](file:///c:/Users/Isuru/Downloads/Antigravity/src/utils/supabase/api.ts)
-- Strip out `deadline` from the insertion payload if it is not explicitly provided by the user. This ensures standard goals (without deadlines) save successfully even if the database is slightly out of sync.
+- Add Supabase endpoints pointing to the new `assets` table.
+
+#### [NEW] [api/prices/route.ts](file:///c:/Users/Isuru/Downloads/Antigravity/src/app/api/prices/route.ts)
+- A lightning-fast server API route that dynamically attempts to pull live global market data for your stock/crypto tickers using external open proxies, returning the real-time calculated net worth of your portfolio.
+
+#### [MODIFY] [investments/page.tsx](file:///c:/Users/Isuru/Downloads/Antigravity/src/app/dashboard/investments/page.tsx)
+- Rip out the "Empty State" wrapper logic and map it dynamically over your actual live Assets.
+- Add real-time price change overlays (Red/Green indicators) measuring your live profit/loss based on your initial buy price vs the current global market ticker price.
 
 ## Open Questions
-- Does the macOS-style dock sound like the right approach for the navigation bar, or would you prefer I hide the extra items inside a "More" drawer menu?
-- Please confirm if you are able to run the SQL command in Supabase for the goals issue, or let me know if you need help finding where to run it!
+
+- Does the proposed SQL schema for `assets` look good? Wait until I finish building to run the SQL if you prefer, I just want to make sure you are ready for it!
+- Do you want the AI Chat Widget to glow or animate softly on the screen to let you know it's available? 
+
+Let me know if this plan is approved!
