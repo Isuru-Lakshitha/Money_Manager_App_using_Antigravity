@@ -33,17 +33,17 @@ export default function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed top-1/2 -translate-y-1/2 left-2 md:left-4 z-50 bg-black/40 backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] rounded-3xl overflow-hidden max-h-[95vh]">
-      <div className="flex flex-col overflow-y-auto hide-scrollbar px-2 py-4 items-center gap-1.5 snap-y snap-mandatory">
+    <nav className="fixed bottom-4 left-4 right-4 md:bottom-auto md:right-auto md:top-1/2 md:-translate-y-1/2 md:left-4 z-50 bg-black/40 backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] rounded-3xl overflow-hidden md:max-h-[95vh]">
+      <div className="flex flex-row md:flex-col overflow-x-auto md:overflow-y-auto md:overflow-x-hidden hide-scrollbar px-2 py-2 md:py-4 items-center gap-1.5 snap-x md:snap-y snap-mandatory">
         {navItems.map((item) => {
           const isActive = pathname === item.href
           
           return (
             <Link key={item.name} href={item.href} className="flex-shrink-0 relative group snap-center" title={item.name}>
               <motion.div
-                whileHover={{ scale: 1.15, x: 2 }}
+                whileHover={{ scale: 1.15 }}
                 whileTap={{ scale: 0.9 }}
-                className={`flex flex-col items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-xl relative z-10 transition-colors duration-300 ${
+                className={`flex flex-col items-center justify-center w-12 h-12 md:w-12 md:h-12 rounded-xl relative z-10 transition-colors duration-300 ${
                   isActive ? 'text-white font-bold' : 'text-gray-500 group-hover:text-cyan-300'
                 }`}
               >
@@ -55,7 +55,7 @@ export default function BottomNav() {
                   />
                 )}
                 
-                <item.icon className={`w-4 h-4 md:w-5 md:h-5 relative z-10 transition-transform duration-300 ${isActive ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]' : ''}`} />
+                <item.icon className={`w-5 h-5 md:w-5 md:h-5 relative z-10 transition-transform duration-300 ${isActive ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]' : ''}`} />
               </motion.div>
             </Link>
           )
