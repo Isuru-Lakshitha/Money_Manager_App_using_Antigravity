@@ -1,0 +1,52 @@
+import { GoogleGenerativeAI } from '@google/generative-ai'
+import { NextResponse } from 'next/server'
+
+export async function POST(req: Request) {
+  try {
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) {
+      return NextResponse.json({ error: 'Missing GEMINI_API_KEY in .env.local' }, { status: 400 })
+    }
+
+    const { messages, financialContext } = await req.json()
+    const genAI = new GoogleGenerativeAI(apiKey)
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+
+    const systemPrompt = `You are Void, an elite, highly intelligent AI personal economist natively integrated into the user's Money Manager app. 
+You speak precisely, clearly, and professionally, but with a touch of premium cyberpunk flair. 
+
+The user has securely provided their real-time financial context below in JSON format.
+Analyze this context to answer their specific questions. Be incredibly accurate. If they ask about spending, sum up the transactions precisely.
+
+[FINANCIAL CONTEXT START]
+${financialContext}
+[FINANCIAL CONTEXT END]
+
+User Guidelines:
+1. Try to use Markdown (bolding, lists) to format your answers elegantly.
+2. If they ask a generic finance question, answer it using modern global best practices.
+3. Keep responses concise unless explicitly asked for a deep dive.`
+
+    // Convert messages array to Gemini format
+    const history = messages.slice(0, -1).map((m: any) => ({
+      role: m.role === 'user' ? 'user' : 'model',
+      parts: [{ text: m.content }]
+    }))
+    
+    let currentMessage = messages[messages.length - 1].content
+
+    // Inject system prompt invisibly into the first message of the session
+    if (messages.length === 1) {
+       currentMessage = `${systemPrompt}\n\nUSER QUERY:\n${currentMessage}`
+    }
+
+    const chat = model.startChat({ history })
+    const result = await chat.sendMessage(currentMessage)
+    const responseText = result.response.text()
+
+    return NextResponse.json({ reply: responseText })
+  } catch (error: any) {
+    console.error("Gemini Chat Error:", error)
+    return NextResponse.json({ error: error.message || 'AI request failed' }, { status: 500 })
+  }
+}

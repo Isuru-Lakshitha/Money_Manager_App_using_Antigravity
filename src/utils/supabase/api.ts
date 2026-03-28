@@ -324,5 +324,42 @@ export const supabaseApi = {
       created_at: new Date().toISOString()
     })
     if (error) throw error
+  },
+
+  // Assets
+  async getAssets() {
+    const supabase = createClient()
+    const { data, error } = await supabase.from('assets').select('*').order('created_at', { ascending: false })
+    if (error) throw error
+    if (!data) return []
+    return data.map((a: any) => ({
+      id: a.id,
+      symbol: a.symbol,
+      name: a.name,
+      assetType: a.asset_type,
+      quantity: Number(a.quantity),
+      averageBuyPrice: Number(a.average_buy_price)
+    }))
+  },
+
+  async createAsset(asset: any) {
+    const supabase = createClient()
+    const userId = await getUserId()
+    const { error } = await supabase.from('assets').insert({
+      id: asset.id,
+      user_id: userId,
+      symbol: asset.symbol,
+      name: asset.name,
+      asset_type: asset.assetType,
+      quantity: asset.quantity,
+      average_buy_price: asset.averageBuyPrice
+    })
+    if (error) throw error
+  },
+
+  async deleteAsset(id: string) {
+    const supabase = createClient()
+    const { error } = await supabase.from('assets').delete().eq('id', id)
+    if (error) throw error
   }
 }

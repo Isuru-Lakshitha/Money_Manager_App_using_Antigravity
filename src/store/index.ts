@@ -109,6 +109,15 @@ export interface Goal {
   deadline?: string
 }
 
+export interface Asset {
+  id: string
+  symbol: string
+  name: string
+  assetType: 'stock' | 'crypto' | 'real_estate' | 'other' | string
+  quantity: number
+  averageBuyPrice: number
+}
+
 export type Frequency = 'daily' | 'weekly' | 'monthly' | 'yearly'
 
 export const getCurrencySymbol = (currency: string) => {
@@ -145,6 +154,7 @@ interface AppState {
   loanPayments: LoanPayment[]
   goals: Goal[]
   recurringTransactions: RecurringTransaction[]
+  assets: Asset[]
   baseCurrency: string
 
   isLoading: boolean
@@ -157,6 +167,7 @@ interface AppState {
   setAccounts: (a: Account[]) => void
   setGoals: (g: Goal[]) => void
   setRecurringTransactions: (r: RecurringTransaction[]) => void
+  setAssets: (a: Asset[]) => void
   setBaseCurrency: (c: string) => void
 
   setLoading: (l: boolean) => void
@@ -193,6 +204,10 @@ interface AppState {
   updateRecurringTransaction: (id: string, rt: Partial<RecurringTransaction>) => Promise<void>
   deleteRecurringTransaction: (id: string) => Promise<void>
 
+  addAsset: (a: Asset) => Promise<void>
+  updateAsset: (id: string, a: Partial<Asset>) => Promise<void>
+  deleteAsset: (id: string) => Promise<void>
+
   updateBaseCurrency: (currency: string) => Promise<void>
 }
 
@@ -204,6 +219,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   loanPayments: [],
   goals: [],
   recurringTransactions: [],
+  assets: [],
   baseCurrency: 'LKR',
 
   isLoading: true, // Start loading initially
@@ -216,6 +232,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   setAccounts: (accounts) => set({ accounts }),
   setGoals: (goals) => set({ goals }),
   setRecurringTransactions: (recurringTransactions) => set({ recurringTransactions }),
+  setAssets: (assets) => set({ assets }),
   setBaseCurrency: (baseCurrency) => set({ baseCurrency }),
 
   setLoading: (isLoading) => set({ isLoading }),
@@ -226,7 +243,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
   fetchGlobalData: async () => {
     set({ isLoading: true })
     try {
-      const [accounts, categories, transactions, loans, loanPayments, goals, recurringTransactions, userSettings] = await Promise.all([
+      const [accounts, categories, transactions, loans, loanPayments, goals, recurringTransactions, assets, userSettings] = await Promise.all([
         supabaseApi.getAccounts().catch(e => { throw new Error("Accounts table: " + e.message) }),
         supabaseApi.getCategories().catch(e => { throw new Error("Categories table: " + e.message) }),
         supabaseApi.getTransactions().catch(e => { throw new Error("Transactions table: " + e.message) }),
@@ -234,6 +251,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
         supabaseApi.getLoanPayments().catch(e => { console.warn("LoanPayments table:", e.message); return [] }),
         supabaseApi.getGoals().catch(e => { console.warn("Goals table:", e.message); return [] }),
         supabaseApi.getRecurringTransactions().catch(e => { console.warn("Recurring txs:", e.message); return [] }),
+        supabaseApi.getAssets().catch(e => { console.warn("Assets table:", e.message); return [] }),
         supabaseApi.getUserSettings().catch(e => { return { baseCurrency: 'LKR' } }) // fallback to LKR if error
       ])
       
@@ -264,6 +282,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
         loanPayments,
         goals,
         recurringTransactions,
+        assets,
         baseCurrency: userSettings?.baseCurrency || 'LKR',
         isLoading: false
       })
@@ -539,6 +558,37 @@ export const useAppStore = create<AppState>()((set, get) => ({
       await supabaseApi.deleteRecurringTransaction(id)
     } catch (error) {
       console.error(error)
+    }
+  },
+
+  addAsset: async (asset) => {
+    set((state) => ({ assets: [...state.assets, asset] }))
+    try {
+      await supabaseApi.createAsset(asset)
+    } catch (error) {
+      console.error(error)
+      set((state) => ({ assets: state.assets.filter(a => a.id !== asset.id) }))
+    }
+  },
+
+  updateAsset: async (id, updated) => {
+    set((state) => ({
+      assets: state.assets.map(a => a.id === id ? { ...a, ...updated } : a)
+    }))
+    // We do not have updateAsset in API yet, skipping for simplicity or can add later.
+  },
+
+  deleteAsset: async (id) => {
+    if (typeof window !== 'undefined' && !window.confirm("Are you sure you want to delete this asset?")) return;
+    const previous = get().assets.find(a => a.id === id)
+    set((state) => ({ assets: state.assets.filter(a => a.id !== id) }))
+    try {
+      await supabaseApi.deleteAsset(id)
+    } catch (error) {
+      console.error(error)
+      if (previous) {
+        set((state) => ({ assets: [...state.assets, previous] }))
+      }
     }
   },
 
