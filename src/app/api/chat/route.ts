@@ -8,16 +8,19 @@ export async function POST(req: Request) {
       try {
         const fs = require('fs')
         const path = require('path')
-        const envFile = fs.readFileSync(path.join(process.cwd(), '.env.local'), 'utf-8')
-        const match = envFile.match(/GEMINI_API_KEY=(.+)/)
-        if (match) apiKey = match[1].trim()
+        const envPath = path.join(process.cwd(), '.env.local')
+        if (fs.existsSync(envPath)) {
+          const envFile = fs.readFileSync(envPath, 'utf-8')
+          const match = envFile.match(/GEMINI_API_KEY=([^\s\r\n]+)/)
+          if (match) apiKey = match[1].trim()
+        }
       } catch (e) {
-        console.warn('Could not parse .env.local dynamically fallback.')
+        // Silently skip fs fallback
       }
     }
     
     if (!apiKey) {
-      return NextResponse.json({ error: 'Missing GEMINI_API_KEY in .env.local' }, { status: 400 })
+      return NextResponse.json({ error: `Missing GEMINI_API_KEY. (Process memory keys: ${Object.keys(process.env).filter(k => k.includes('GEMINI')).join(',')})` }, { status: 400 })
     }
 
     const { messages, financialContext } = await req.json()
