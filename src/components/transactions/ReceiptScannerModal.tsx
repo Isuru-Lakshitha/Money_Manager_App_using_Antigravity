@@ -36,7 +36,7 @@ export default function ReceiptScannerModal({ isOpen, onClose, onScanComplete }:
     if (!image) return
     setIsScanning(true)
     setProgress(30)
-    setStatusText('Uploading to AI Core...')
+    setStatusText('Processing Image...')
 
     try {
       const res = await fetch('/api/ocr', {
@@ -46,7 +46,7 @@ export default function ReceiptScannerModal({ isOpen, onClose, onScanComplete }:
       })
 
       if (!res.ok) {
-        throw new Error('AI Scan failed')
+        throw new Error('Scan failed')
       }
 
       setProgress(80)
