@@ -37,6 +37,8 @@ export default function LoginPage() {
       // Mock bypass for local testing without a real Supabase backend
       const isMockProject = process.env.NEXT_PUBLIC_SUPABASE_URL === 'https://mockproject.supabase.co';
       if (isMockProject) {
+        sessionStorage.setItem('voidledger_tab_session', '1');
+        localStorage.setItem('voidledger_last_active', Date.now().toString());
         setTimeout(() => {
           router.push('/dashboard');
         }, 500);
@@ -46,6 +48,8 @@ export default function LoginPage() {
       if (mode === 'reset') {
         const { error } = await supabase.auth.updateUser({ password })
         if (error) throw error
+        sessionStorage.setItem('voidledger_tab_session', '1');
+        localStorage.setItem('voidledger_last_active', Date.now().toString());
         setMsg("Password successfully updated. Going to Dashboard...")
         setTimeout(() => window.location.href = '/dashboard', 1500)
       } else if (mode === 'forgot') {
@@ -60,6 +64,8 @@ export default function LoginPage() {
           password,
         })
         if (error) throw error
+        sessionStorage.setItem('voidledger_tab_session', '1');
+        localStorage.setItem('voidledger_last_active', Date.now().toString());
         setMsg("Authentication successful. Redirecting...")
         setTimeout(() => {
           window.location.href = '/dashboard'
@@ -70,6 +76,8 @@ export default function LoginPage() {
           password,
         })
         if (error) throw error
+        sessionStorage.setItem('voidledger_tab_session', '1');
+        localStorage.setItem('voidledger_last_active', Date.now().toString());
         setMsg("Account created! Redirecting...")
         setTimeout(() => {
           window.location.href = '/dashboard'
